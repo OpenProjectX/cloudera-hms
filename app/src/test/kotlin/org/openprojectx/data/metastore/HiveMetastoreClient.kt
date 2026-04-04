@@ -236,7 +236,7 @@ class HiveMetastoreClient(
     // ──────────────────────────────────────────────
 
     fun getTableStats(db: String, tableName: String, colNames: List<String>): List<ColumnStatisticsObj> =
-        client.getTableColumnStatistics(db, tableName, colNames)
+        client.getTableColumnStatistics(db, tableName, colNames,"engine")
 
     fun updateTableParams(db: String, tableName: String, params: Map<String, String>) {
         val table = client.getTable(db, tableName)
