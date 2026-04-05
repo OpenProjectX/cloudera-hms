@@ -111,6 +111,12 @@ Breaking change:
 
 - tests should now use `@ClouderaHiveMetastoreTest` instead of `@ExtendWith(ClouderaHiveMetastoreExtension::class)`
 
+## Test logging
+
+The Spark test suite uses [log4j2.xml](/data/Git/cloudera-hms/spark/src/test/resources/log4j2.xml).
+
+The `spark` module excludes `org.slf4j:slf4j-reload4j` so Spark test logging stays on the Log4j 2 stack already brought in by Spark and Hive. It also forces `org.slf4j:slf4j-api:1.7.36` because the Spark 3.3 and Hive logging bridge in this stack still targets the SLF4J 1.7 API. If you customize Spark test logging, update `log4j2.xml` rather than adding Log4j 1 style configuration.
+
 ## Tests
 
 Implemented test coverage:

@@ -4,6 +4,13 @@ plugins {
 
 configurations.configureEach {
     exclude(group = "org.apache.parquet", module = "parquet-hadoop-bundle")
+    exclude(group = "org.slf4j", module = "slf4j-reload4j")
+    exclude(group = "org.apache.hadoop" , module = "hadoop-yarn-server-resourcemanager")
+    exclude(group = "org.eclipse.jetty")
+    exclude(group = "org.apache.tez")
+    exclude(group = "org.apache.curator")
+    exclude(group = "org.apache.twill")
+    resolutionStrategy.force("org.slf4j:slf4j-api:1.7.36")
 }
 
 dependencies {

@@ -57,7 +57,7 @@ class SparkIcebergS3TckTest {
                 jdbcUrl = postgres.jdbcUrl,
                 jdbcUser = postgres.username,
                 jdbcPassword = postgres.password,
-                logLevel = "DEBUG",
+                logLevel = "INFO",
                 extraConfiguration = mapOf(
                     "fs.s3a.impl" to "org.apache.hadoop.fs.s3a.S3AFileSystem",
                     "fs.s3a.endpoint" to endpoint,
