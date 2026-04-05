@@ -7,7 +7,8 @@ import org.junit.jupiter.api.extension.ParameterContext
 import org.junit.jupiter.api.extension.ParameterResolver
 import org.openprojectx.cloudera.hms.core.ClouderaHiveMetastoreConfig
 import org.openprojectx.cloudera.hms.core.ClouderaHiveMetastoreProcess
-import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.postgresql.PostgreSQLContainer
+import org.testcontainers.utility.DockerImageName
 import java.net.ServerSocket
 import java.nio.file.Files
 
@@ -18,7 +19,10 @@ class ClouderaHiveMetastoreExtension : BeforeAllCallback, AfterAllCallback, Para
             return
         }
 
-        val postgres = PostgreSQLContainer<Nothing>("postgres:14").apply {
+        val postgres = PostgreSQLContainer(
+            DockerImageName.parse("postgres:14")
+                .asCompatibleSubstituteFor("postgres")
+        ).apply {
             withDatabaseName("metastore_db")
             withUsername("hive")
             withPassword("hive-password")
@@ -55,7 +59,7 @@ class ClouderaHiveMetastoreExtension : BeforeAllCallback, AfterAllCallback, Para
         context.getStore(ExtensionContext.Namespace.create(javaClass, context.requiredTestClass))
 
     private data class State(
-        val postgres: PostgreSQLContainer<Nothing>,
+        val postgres: PostgreSQLContainer,
         val metastore: ClouderaHiveMetastoreProcess,
     )
 
