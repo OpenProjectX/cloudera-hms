@@ -11,9 +11,12 @@ springBoot = "4.0.5"
 clouderaSpark = "3.3.2.3.3.7190.9-1"
 clouderaHive = "3.1.3000.7.1.9.14-2"
 clouderaHadoop = "3.1.1.7.1.9.14-2"
+parquet = "1.10.99.7.1.9.14-2"
 postgresql = "42.7.7"
 junit = "6.0.3"
 testcontainers = "2.0.4"
+iceberg = "1.5.2"
+awsSdk = "2.31.65"
 
 [libraries]
 kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
@@ -33,9 +36,22 @@ testcontainersPostgresql = { module = "org.testcontainers:testcontainers-postgre
 clouderaHiveMetastore = { module = "org.apache.hive:hive-metastore", version.ref = "clouderaHive" }
 clouderaHiveStandaloneMetastore = { module = "org.apache.hive:hive-standalone-metastore", version.ref = "clouderaHive" }
 clouderaHadoopCommon = { module = "org.apache.hadoop:hadoop-common", version.ref = "clouderaHadoop" }
+clouderaHadoopAws = { module = "org.apache.hadoop:hadoop-aws", version.ref = "clouderaHadoop" }
 clouderaSparkCore = { module = "org.apache.spark:spark-core_2.12", version.ref = "clouderaSpark" }
 clouderaSparkSql = { module = "org.apache.spark:spark-sql_2.12", version.ref = "clouderaSpark" }
 clouderaSparkHive = { module = "org.apache.spark:spark-hive_2.12", version.ref = "clouderaSpark" }
+icebergSparkRuntime = { module = "org.apache.iceberg:iceberg-spark-runtime-3.3_2.12", version.ref = "iceberg" }
+iceberg-core = { group = "org.apache.iceberg", name = "iceberg-core", version.ref = "iceberg" }
+iceberg-spark = { group = "org.apache.iceberg", name = "iceberg-spark-3.3_2.12", version.ref = "iceberg" }
+iceberg-spark-extensions = { group = "org.apache.iceberg", name = "iceberg-spark-extensions-3.3_2.12", version.ref = "iceberg" }
+iceberg-aws = { group = "org.apache.iceberg", name = "iceberg-aws", version.ref = "iceberg" }
+iceberg-aws-bundle = { group = "org.apache.iceberg", name = "iceberg-aws-bundle", version.ref = "iceberg" }
+iceberg-hive-metastore = { group = "org.apache.iceberg", name = "iceberg-hive-metastore", version.ref = "iceberg" }
+
+
+awsSdkS3 = { module = "software.amazon.awssdk:s3", version.ref = "awsSdk" }
+parquet = { module = "org.apache.parquet:parquet-avro", version.ref = "parquet" }
+
 
 # Libraries can be bundled together for easier import
 [bundles]
@@ -43,6 +59,9 @@ kotlinxEcosystem = ["kotlinxDatetime", "kotlinxSerialization", "kotlinxCoroutine
 junit = ["junitJupiterApi", "junitJupiterEngine", "junitPlatformLauncher"]
 testcontainers = ["testcontainers", "testcontainersJunit", "testcontainersPostgresql"]
 clouderaSpark = ["clouderaSparkCore", "clouderaSparkSql", "clouderaSparkHive"]
+
+spark-iceberg = ["iceberg-core", "iceberg-spark", "iceberg-spark-extensions", "iceberg-hive-metastore"]
+
 
 [plugins]
 kotlinPluginSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

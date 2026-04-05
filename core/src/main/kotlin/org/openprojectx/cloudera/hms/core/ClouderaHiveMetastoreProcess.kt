@@ -6,8 +6,11 @@ import java.io.InputStreamReader
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.nio.file.Files
+import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
+import java.util.Locale
+import java.util.Properties
 import java.util.concurrent.TimeUnit
 
 class ClouderaHiveMetastoreProcess private constructor(
@@ -31,6 +34,8 @@ class ClouderaHiveMetastoreProcess private constructor(
     companion object {
         fun start(config: ClouderaHiveMetastoreConfig): ClouderaHiveMetastoreProcess {
             Files.createDirectories(config.warehouseDir)
+            val extraConfigFile = extraConfigFile(config)
+            val logConfigFile = logConfigFile(config)
 
             val javaBinary = javaBinary()
             val classpath = System.getProperty("java.class.path")
@@ -46,6 +51,10 @@ class ClouderaHiveMetastoreProcess private constructor(
                 add("-Dcloudera.hms.initialize-schema=${config.initializeSchema}")
                 add("-Dcloudera.hms.schema.resource=${config.schemaResource}")
                 config.schemaFile?.let { add("-Dcloudera.hms.schema.file=$it") }
+                extraConfigFile?.let { add("-Dcloudera.hms.extra-config-file=$it") }
+                add("-Dcloudera.hms.log.level=${config.logLevel}")
+                add("-Dlog4j.configurationFile=$logConfigFile")
+                add("-Dlog4j2.configurationFile=$logConfigFile")
                 add("-cp")
                 add(classpath)
                 add("org.openprojectx.cloudera.hms.core.HiveMetastoreServerMainKt")
@@ -105,6 +114,33 @@ class ClouderaHiveMetastoreProcess private constructor(
                 return candidate.toString()
             }
             return "java"
+        }
+
+        private fun extraConfigFile(config: ClouderaHiveMetastoreConfig): Path? {
+            if (config.extraConfiguration.isEmpty()) {
+                return null
+            }
+
+            val file = Files.createTempFile("cloudera-hms-extra-", ".properties")
+            val properties = Properties()
+            config.extraConfiguration.toSortedMap().forEach { (key, value) -> properties.setProperty(key, value) }
+            file.toFile().outputStream().use { properties.store(it, "cloudera-hms extra configuration") }
+            return file
+        }
+
+        private fun logConfigFile(config: ClouderaHiveMetastoreConfig): Path {
+            config.logConfigFile?.let { return it }
+
+            val level = config.logLevel.uppercase(Locale.ROOT)
+            val template = requireNotNull(
+                ClouderaHiveMetastoreProcess::class.java.getResource("/hive-log4j2.properties.template")
+            ) {
+                "Missing bundled hive-log4j2 template"
+            }.readText()
+
+            val file = Files.createTempFile("cloudera-hms-log4j2-", ".properties")
+            Files.writeString(file, template.replace("\${ROOT_LOG_LEVEL}", level))
+            return file
         }
     }
 }

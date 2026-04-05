@@ -15,6 +15,9 @@ data class ClouderaHiveMetastoreConfig(
     val schemaFile: Path? = null,
     val initializeSchema: Boolean = true,
     val startupTimeoutMillis: Long = 120_000,
+    val extraConfiguration: Map<String, String> = emptyMap(),
+    val logLevel: String = "INFO",
+    val logConfigFile: Path? = null,
 ) {
     init {
         require(port in 1..65535) { "port must be between 1 and 65535" }
