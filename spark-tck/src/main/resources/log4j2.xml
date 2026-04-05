@@ -3,7 +3,7 @@
 
     <Properties>
         <!-- Shared pattern with colors -->
-        <Property name="CONSOLE_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight{%-5level}{FATAL=red blink, ERROR=red bold, WARN=yellow bold, INFO=green, DEBUG=cyan, TRACE=blue} [%style{%20.20t}{bright,magenta}] %style{%logger}{bright,cyan} - %msg%n%throwable</Property>
+        <Property name="CONSOLE_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight{%-5level}{FATAL=red, ERROR=red, WARN=yellow, INFO=green, DEBUG=cyan, TRACE=blue} [%style{%20.20t}{magenta}] %style{%logger}{cyan} - %msg%n%throwable</Property>
         <!--        <Property name="FILE_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%20.20t] %logger - %msg%n%throwable</Property>-->
         <!--        <Property name="LOG_DIR">${sys:log.dir:-logs}</Property>-->
     </Properties>

@@ -1,4 +1,4 @@
-package org.openprojectx.cloudera.hms.core
+package org.openprojectx.cloudera.hms.org.openprojectx.cloudera.hms.tck
 
 import org.apache.hadoop.hive.metastore.TableType
 import org.apache.hadoop.hive.metastore.api.Database
@@ -11,8 +11,10 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.openprojectx.cloudera.hms.core.ClouderaHiveMetastoreProcess
 import org.openprojectx.cloudera.hms.junit5.ClouderaHiveMetastoreTest
 import java.util.UUID
+import kotlin.use
 
 @ClouderaHiveMetastoreTest
 class HiveMetastoreClientTckTest {

@@ -8,6 +8,7 @@ The current dependency baseline is driven from Cloudera Spark `3.3.0.3.3.7180.2-
 
 - `core`: metastore runtime, PostgreSQL schema bootstrap, configuration helpers, and Hive client TCK.
 - `junit5`: annotation-driven JUnit 5 support that provisions PostgreSQL and starts the metastore for tests.
+- `runtime`: shaded standalone runtime jar for launching the metastore with relocated third-party dependencies.
 - `spark`: Spark-facing TCKs that validate Spark SQL and Iceberg against the metastore.
 
 ## Version alignment
@@ -52,8 +53,20 @@ The metastore runtime in `core`:
 - allows overriding the schema with a custom SQL file
 - accepts additional HMS-side Hadoop or Hive configuration entries such as `fs.s3a.*`
 - can generate a simple Log4j 2 configuration with configurable root log level
-- can be packaged as a shaded `-all` jar via the Shadow plugin
 - exposes a small Kotlin API for starting the metastore in a dedicated JVM process
+
+The standalone shaded runtime now lives in `runtime`, not `core`.
+
+Breaking change:
+
+- use `:runtime:shadowJar` for the fat runtime jar instead of `:core:shadowJar`
+
+The `runtime` module:
+
+- depends on `:core`
+- produces a shaded `-all` jar
+- relocates selected third-party packages to reduce conflict risk with host applications
+- keeps the exclusions already declared in `core` as exclusions rather than relocating them
 
 Default configuration is defined in [ClouderaHiveMetastoreConfig.kt](/data/Git/cloudera-hms/core/src/main/kotlin/org/openprojectx/cloudera/hms/core/ClouderaHiveMetastoreConfig.kt).
 
@@ -131,7 +144,7 @@ Useful commands:
 
 ```bash
 GRADLE_USER_HOME=/data/.gradle ./gradlew :core:test
-GRADLE_USER_HOME=/data/.gradle ./gradlew :core:shadowJar
+GRADLE_USER_HOME=/data/.gradle ./gradlew :runtime:shadowJar
 GRADLE_USER_HOME=/data/.gradle ./gradlew :spark:test
 GRADLE_USER_HOME=/data/.gradle ./gradlew :spark:compileTestKotlin
 ```
