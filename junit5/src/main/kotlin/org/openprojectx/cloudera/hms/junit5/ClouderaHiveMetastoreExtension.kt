@@ -11,6 +11,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
 import java.net.ServerSocket
 import java.nio.file.Files
+import java.nio.file.Path
 
 class ClouderaHiveMetastoreExtension : BeforeAllCallback, AfterAllCallback, ParameterResolver {
     override fun beforeAll(context: ExtensionContext) {
@@ -19,8 +20,9 @@ class ClouderaHiveMetastoreExtension : BeforeAllCallback, AfterAllCallback, Para
             return
         }
 
+        val settings = settings(context)
         val postgres = PostgreSQLContainer(
-            DockerImageName.parse("postgres:14")
+            DockerImageName.parse(settings.postgresImage)
                 .asCompatibleSubstituteFor("postgres")
         ).apply {
             withDatabaseName("metastore_db")
@@ -37,6 +39,9 @@ class ClouderaHiveMetastoreExtension : BeforeAllCallback, AfterAllCallback, Para
                 jdbcUrl = postgres.jdbcUrl,
                 jdbcUser = postgres.username,
                 jdbcPassword = postgres.password,
+                schemaResource = settings.schemaResource ?: "/hive-schema-3.1.3000.postgres.sql",
+                schemaFile = settings.schemaFile,
+                logLevel = settings.logLevel,
             )
         )
 
@@ -58,9 +63,53 @@ class ClouderaHiveMetastoreExtension : BeforeAllCallback, AfterAllCallback, Para
     private fun store(context: ExtensionContext): ExtensionContext.Store =
         context.getStore(ExtensionContext.Namespace.create(javaClass, context.requiredTestClass))
 
+    private fun settings(context: ExtensionContext): Settings {
+        val annotation = context.requiredTestClass.getAnnotation(ClouderaHiveMetastoreTest::class.java)
+            ?: error("${context.requiredTestClass.name} must be annotated with @ClouderaHiveMetastoreTest")
+
+        val schemaPath = annotation.schemaSqlPath.trim()
+        val schemaFile = schemaFile(schemaPath)
+        val schemaResource = schemaResource(schemaPath, schemaFile)
+        return Settings(
+            postgresImage = annotation.postgresImage,
+            schemaFile = schemaFile,
+            schemaResource = schemaResource,
+            logLevel = annotation.logLevel,
+        )
+    }
+
+    private fun schemaFile(schemaPath: String): Path? {
+        if (schemaPath.isBlank()) {
+            return null
+        }
+
+        val path = Path.of(schemaPath)
+        return if (Files.exists(path)) path else null
+    }
+
+    private fun schemaResource(schemaPath: String, schemaFile: Path?): String? {
+        if (schemaPath.isBlank() || schemaFile != null) {
+            return null
+        }
+
+        val normalized = if (schemaPath.startsWith("/")) schemaPath else "/$schemaPath"
+        val resourcePath = normalized.removePrefix("/")
+        require(javaClass.getResource(normalized) != null || javaClass.classLoader.getResource(resourcePath) != null) {
+            "Schema SQL path '$schemaPath' is neither an existing file nor a classpath resource"
+        }
+        return normalized
+    }
+
     private data class State(
         val postgres: PostgreSQLContainer,
         val metastore: ClouderaHiveMetastoreProcess,
+    )
+
+    private data class Settings(
+        val postgresImage: String,
+        val schemaFile: Path?,
+        val schemaResource: String?,
+        val logLevel: String,
     )
 
     companion object {

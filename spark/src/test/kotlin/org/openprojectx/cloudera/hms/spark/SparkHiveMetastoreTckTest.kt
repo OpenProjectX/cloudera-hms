@@ -10,13 +10,12 @@ import org.apache.spark.sql.types.StructType
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
 import org.openprojectx.cloudera.hms.core.ClouderaHiveMetastoreProcess
-import org.openprojectx.cloudera.hms.junit5.ClouderaHiveMetastoreExtension
+import org.openprojectx.cloudera.hms.junit5.ClouderaHiveMetastoreTest
 import java.sql.Timestamp
 import java.util.UUID
 
-@ExtendWith(ClouderaHiveMetastoreExtension::class)
+@ClouderaHiveMetastoreTest
 class SparkHiveMetastoreTckTest {
     @Test
     fun `spark can create alter and query Hive metadata through cloudera hms`(metastore: ClouderaHiveMetastoreProcess) {

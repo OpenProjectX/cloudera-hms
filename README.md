@@ -7,8 +7,8 @@ The current dependency baseline is driven from Cloudera Spark `3.3.0.3.3.7180.2-
 ## Modules
 
 - `core`: metastore runtime, PostgreSQL schema bootstrap, configuration helpers, and Hive client TCK.
-- `junit5`: JUnit 5 extension that provisions PostgreSQL and starts the metastore for tests.
-- `spark`: Spark-facing TCK that validates Spark SQL against the metastore.
+- `junit5`: annotation-driven JUnit 5 support that provisions PostgreSQL and starts the metastore for tests.
+- `spark`: Spark-facing TCKs that validate Spark SQL and Iceberg against the metastore.
 
 ## Version alignment
 
@@ -50,6 +50,8 @@ The metastore runtime in `core`:
 - uses PostgreSQL as the backing store
 - initializes schema from the bundled `core/src/main/resources/hive-schema-3.1.3000.postgres.sql` by default
 - allows overriding the schema with a custom SQL file
+- accepts additional HMS-side Hadoop or Hive configuration entries such as `fs.s3a.*`
+- can generate a simple Log4j 2 configuration with configurable root log level
 - exposes a small Kotlin API for starting the metastore in a dedicated JVM process
 
 Default configuration is defined in [ClouderaHiveMetastoreConfig.kt](/data/Git/cloudera-hms/core/src/main/kotlin/org/openprojectx/cloudera/hms/core/ClouderaHiveMetastoreConfig.kt).
@@ -76,13 +78,47 @@ Optional properties:
 
 `cloudera.hms.schema.file` takes precedence when you want to supply your own schema SQL.
 
+When starting the server through the Kotlin API, [ClouderaHiveMetastoreConfig.kt](/data/Git/cloudera-hms/core/src/main/kotlin/org/openprojectx/cloudera/hms/core/ClouderaHiveMetastoreConfig.kt) also exposes:
+
+- `extraConfiguration` for arbitrary Hive or Hadoop properties that need to exist inside the metastore JVM
+- `logLevel` for generated HMS server logging such as `DEBUG` or `TRACE`
+- `logConfigFile` if you want to supply a complete custom Log4j 2 properties file instead of the generated one
+
+This matters for S3-backed catalogs: Spark-side `fs.s3a.*` settings are not enough on their own. The HMS process must also receive matching S3A settings if it needs to create or validate `s3a://...` warehouse or namespace paths.
+
+## JUnit 5 usage
+
+The `junit5` module now uses a custom annotation instead of requiring direct `@ExtendWith(...)` usage.
+
+Use [ClouderaHiveMetastoreTest.kt](/data/Git/cloudera-hms/junit5/src/main/kotlin/org/openprojectx/cloudera/hms/junit5/ClouderaHiveMetastoreTest.kt):
+
+```kotlin
+@ClouderaHiveMetastoreTest(
+    postgresImage = "postgres:14",
+    schemaSqlPath = "/hive-schema-3.1.3000.postgres.sql",
+    logLevel = "DEBUG",
+)
+class MyMetastoreTest
+```
+
+Supported annotation attributes:
+
+- `postgresImage`: overrides the PostgreSQL Testcontainers image
+- `schemaSqlPath`: accepts either a filesystem path or a classpath resource path
+- `logLevel`: configures the generated HMS server Log4j 2 root level
+
+Breaking change:
+
+- tests should now use `@ClouderaHiveMetastoreTest` instead of `@ExtendWith(ClouderaHiveMetastoreExtension::class)`
+
 ## Tests
 
 Implemented test coverage:
 
 - Hive metastore client TCK in [HiveMetastoreClientTckTest.kt](/data/Git/cloudera-hms/core/src/test/kotlin/org/openprojectx/cloudera/hms/core/HiveMetastoreClientTckTest.kt)
 - Spark integration TCK in [SparkHiveMetastoreTckTest.kt](/data/Git/cloudera-hms/spark/src/test/kotlin/org/openprojectx/cloudera/hms/spark/SparkHiveMetastoreTckTest.kt)
-- reusable JUnit 5 extension in [ClouderaHiveMetastoreExtension.kt](/data/Git/cloudera-hms/junit5/src/main/kotlin/org/openprojectx/cloudera/hms/junit5/ClouderaHiveMetastoreExtension.kt)
+- Spark Iceberg over S3 TCK using LocalStack in [SparkIcebergS3TckTest.kt](/data/Git/cloudera-hms/spark/src/test/kotlin/org/openprojectx/cloudera/hms/spark/SparkIcebergS3TckTest.kt)
+- annotation-driven JUnit 5 support in [ClouderaHiveMetastoreExtension.kt](/data/Git/cloudera-hms/junit5/src/main/kotlin/org/openprojectx/cloudera/hms/junit5/ClouderaHiveMetastoreExtension.kt)
 
 Useful commands:
 
@@ -96,7 +132,8 @@ GRADLE_USER_HOME=/data/.gradle ./gradlew :spark:compileTestKotlin
 
 Verified in this workspace:
 
-- `GRADLE_USER_HOME=/data/.gradle ./gradlew :spark:compileTestKotlin`
+- `GRADLE_USER_HOME=/data/.gradle ./gradlew :core:compileKotlin :spark:compileTestKotlin`
+- `GRADLE_USER_HOME=/data/.gradle ./gradlew :junit5:compileKotlin :core:compileTestKotlin :spark:compileTestKotlin`
 
 Not fully executable in this workspace:
 

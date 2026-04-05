@@ -11,11 +11,10 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.openprojectx.cloudera.hms.junit5.ClouderaHiveMetastoreExtension
+import org.openprojectx.cloudera.hms.junit5.ClouderaHiveMetastoreTest
 import java.util.UUID
 
-@ExtendWith(ClouderaHiveMetastoreExtension::class)
+@ClouderaHiveMetastoreTest
 class HiveMetastoreClientTckTest {
     @Test
     fun `supports core Hive metastore lifecycle operations`(metastore: ClouderaHiveMetastoreProcess) {
