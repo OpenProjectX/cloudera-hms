@@ -120,6 +120,33 @@ publishing {
             artifact(tasks.named("sourcesJar"))
             artifact(tasks.named("javadocJar"))
             artifactId = project.name
+
+            pom {
+                name.set(project.name)
+                description.set("Standalone shaded runtime for cloudera-hms")
+                url.set("https://github.com/OpenProjectX/cloudera-hms")
+
+                licenses {
+                    license {
+                        name.set("Apache License 2.0")
+                        url.set("https://www.apache.org/licenses/LICENSE-2.0")
+                    }
+                }
+
+                developers {
+                    developer {
+                        id.set("OpenProjectX")
+                        name.set("OpenProjectX")
+                        email.set("admin@openprojectx.org")
+                    }
+                }
+
+                scm {
+                    url.set("https://github.com/OpenProjectX/cloudera-hms")
+                    connection.set("scm:git:https://github.com/OpenProjectX/cloudera-hms.git")
+                    developerConnection.set("scm:git:ssh://git@github.com:OpenProjectX/cloudera-hms.git")
+                }
+            }
         }
     }
 }
