@@ -27,6 +27,9 @@ subprojects {
 
     // Configure publishing only when the project has a Java component (Kotlin/JVM typically applies java too)
     plugins.withId("java") {
+        if (project.path == ":runtime") {
+            return@withId
+        }
 
         // ✅ Ensure required artifacts exist for Maven Central
         extensions.configure<JavaPluginExtension>("java") {

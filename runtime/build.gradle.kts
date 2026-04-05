@@ -1,6 +1,8 @@
 import com.github.jengelman.gradle.plugins.shadow.transformers.Log4j2PluginsCacheFileTransformer
 import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.api.publish.tasks.GenerateModuleMetadata
+import org.gradle.api.plugins.JavaPluginExtension
 
 plugins {
     id("buildsrc.convention.kotlin-jvm")
@@ -8,6 +10,11 @@ plugins {
 }
 
 val shadedPrefix = "org.openprojectx.cloudera.hms.runtime.shaded"
+
+extensions.configure<JavaPluginExtension>("java") {
+    withSourcesJar()
+    withJavadocJar()
+}
 
 configurations.configureEach {
     exclude(group = "org.apache.zookeeper")
@@ -48,7 +55,7 @@ configurations.configureEach {
 }
 
 dependencies {
-    compileOnly(project(":core")) {
+    implementation(project(":core")) {
 
     }
 }
@@ -107,10 +114,16 @@ tasks.shadowJar {
 }
 
 publishing {
-    publications.named<MavenPublication>("mavenJava") {
-        setArtifacts(emptyList<Any>())
-        artifact(tasks.shadowJar)
-        artifact(tasks.sourcesJar)
-        artifact(tasks.javadocJar)
+    publications {
+        create<MavenPublication>("mavenJava") {
+            from(components["shadow"])
+            artifact(tasks.named("sourcesJar"))
+            artifact(tasks.named("javadocJar"))
+            artifactId = project.name
+        }
     }
+}
+
+tasks.withType<GenerateModuleMetadata>().configureEach {
+    enabled = false
 }
