@@ -8,8 +8,48 @@ plugins {
 
 val shadedPrefix = "org.openprojectx.cloudera.hms.runtime.shaded"
 
+configurations.configureEach {
+    exclude(group = "org.apache.zookeeper")
+    exclude(group = "org.apache.hadoop", module = "hadoop-yarn-server-resourcemanager")
+    exclude(group = "org.eclipse.jetty")
+    exclude(group = "org.apache.tez")
+    exclude(group = "org.apache.curator")
+    exclude(group = "org.apache.twill")
+    exclude(group = "org.apache.parquet", module = "parquet-hadoop-bundle")
+
+    listOf(
+        "org.apache.atlas",
+        "com.sun.jersey",
+        "org.apache.calcite.avatica",
+        "org.apache.calcite",
+        "junit",
+        "co.cask.tephra",
+        "org.apache.ivy",
+        "org.apache.ant",
+        "org.codehaus.groovy",
+        "javax.servlet",
+        "commons-cli",
+        "org.apache.orc",
+    )
+        .forEach { exclude(group = it) }
+
+//    listOf(
+//        "org.apache.hive" to "hive-llap-tez",
+//        "org.apache.hadoop" to "hadoop-yarn-registry",
+//        "org.apache.hadoop" to "hadoop-yarn-api",
+//        "org.apache.hive" to "hive-vector-code-gen",
+//        "org.apache.hive" to "hive-shims",
+//    )
+//        .forEach { (group, module) ->
+//            exclude(group = group, module = module)
+//        }
+
+}
+
 dependencies {
-    implementation(project(":core"))
+    implementation(project(":core")) {
+
+    }
 }
 
 tasks.jar {
@@ -42,17 +82,24 @@ tasks.shadowJar {
 
     // Keep the core API package stable and relocate selected third-party libraries
     // that are most likely to conflict in embedding scenarios.
-    relocate("com.google.common", "$shadedPrefix.com.google.common")
-    relocate("com.google.gson", "$shadedPrefix.com.google.gson")
-    relocate("org.codehaus.jackson", "$shadedPrefix.org.codehaus.jackson")
-    relocate("org.apache.thrift", "$shadedPrefix.org.apache.thrift")
-    relocate("org.apache.zookeeper", "$shadedPrefix.org.apache.zookeeper")
-    relocate("org.apache.parquet", "$shadedPrefix.org.apache.parquet")
-    relocate("org.apache.hive", "$shadedPrefix.org.apache.hive")
-    relocate("org.apache.hadoop", "$shadedPrefix.org.apache.hadoop")
-    relocate("org.apache.avro", "$shadedPrefix.org.apache.avro")
-    relocate("org.apache.parquet", "$shadedPrefix.org.apache.parquet")
-
+    listOf(
+        "com.google.common",
+        "com.google.gson",
+        "org.codehaus.jackson",
+        "org.apache.thrift",
+        "org.apache.zookeeper",
+        "org.apache.parquet",
+        "org.apache.hive",
+        "org.apache.hadoop",
+        "org.apache.avro",
+        "org.apache.parquet",
+        "com.fasterxml.jackson",
+        "io.netty",
+        "org.apache.commons"
+    )
+        .forEach {
+            relocate(it, "$shadedPrefix.$it")
+        }
 
 
 }

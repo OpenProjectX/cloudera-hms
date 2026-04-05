@@ -17,14 +17,23 @@ configurations.configureEach {
         "org.apache.calcite.avatica",
         "org.apache.calcite",
         "junit",
-        "co.cask.tephra"
+        "co.cask.tephra",
+        "org.apache.ivy",
+        "org.apache.ant",
+        "org.codehaus.groovy",
+        "javax.servlet",
+        "commons-cli",
+        "org.apache.orc",
     )
         .forEach { exclude(group = it) }
 
-    mapOf(
+    listOf(
         "org.apache.hive" to "hive-llap-tez",
         "org.apache.hadoop" to "hadoop-yarn-registry",
         "org.apache.hadoop" to "hadoop-yarn-api",
+        "org.apache.hive" to "hive-vector-code-gen",
+        "org.apache.hive" to "hive-shims",
+
 
         )
         .forEach { (group, module) ->
@@ -37,8 +46,8 @@ dependencies {
 //    implementation(libs.clouderaHiveStandaloneMetastore)
 //    implementation(libs.clouderaHiveMetastore)
 //    implementation(libs.clouderaHadoopCommon)
-    implementation(libs.bundles.clouderaHms){
-        exclude("org.apache.hadoop","hadoop-yarn-registry")
+    implementation(libs.bundles.clouderaHms) {
+//        exclude("org.apache.hadoop", "hadoop-yarn-registry")
 //        exclude("org.apache.calcite")
     }
 

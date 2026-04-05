@@ -27,8 +27,8 @@ class HiveMetastoreClientTckTest {
         metastore.createClient().use { client ->
             client.createDatabase(
                 Database().apply {
-                    setName(databaseName)
-                    setLocationUri(metastore.config.warehouseDir.resolve(databaseName).toUri().toString())
+                    name = databaseName
+                    locationUri = metastore.config.warehouseDir.resolve(databaseName).toUri().toString()
                 }
             )
 
