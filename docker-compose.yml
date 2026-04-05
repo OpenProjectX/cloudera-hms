@@ -1,0 +1,22 @@
+name: cloudera-hms-dev
+
+services:
+  postgres:
+    image: postgres:14
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: metastore_db
+      POSTGRES_USER: hive
+      POSTGRES_PASSWORD: hive-password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres14-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hive -d metastore_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres14-data:

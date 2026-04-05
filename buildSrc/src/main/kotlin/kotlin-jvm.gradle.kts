@@ -18,6 +18,23 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 }
 
+fun Test.loadJvmArgsFrom(file: File) {
+    if (!file.exists()) return
+
+    val lines = file.readLines()
+        .map { it.trim() }
+        .filter { it.isNotEmpty() && !it.startsWith("#") }
+
+    val (systemProps, jvmArgsList) = lines.partition { it.startsWith("-D") }
+
+    jvmArgs(jvmArgsList)
+
+    systemProps.forEach {
+        val (k, v) = it.removePrefix("-D").split("=", limit = 2)
+        systemProperty(k, v)
+    }
+}
+
 tasks.withType<Test>().configureEach {
     // Configure all test Gradle tasks to use JUnitPlatform.
     useJUnitPlatform()
@@ -30,4 +47,9 @@ tasks.withType<Test>().configureEach {
             TestLogEvent.SKIPPED
         )
     }
+
+//    loadJvmArgsFrom(rootProject.file("gradle/test-jvm.args"))
+
+    val moduleFile = project.file("test-jvm.args")
+    loadJvmArgsFrom(moduleFile)
 }

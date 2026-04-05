@@ -16,6 +16,11 @@ allprojects {
 subprojects {
     tasks.register<DependencyReportTask>("allDependencies") {}
 
+    repositories {
+        mavenCentral()
+        maven(url = "https://repository.cloudera.com/repository/cloudera-repos/")
+    }
+
     // Apply to every module (safe even if a module doesn't publish)
     apply(plugin = "maven-publish")
     apply(plugin = "signing")

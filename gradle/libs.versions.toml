@@ -8,6 +8,12 @@ kotlinxDatetime = "0.7.1"
 kotlinxSerializationJSON = "1.9.0"
 kotlinxCoroutines = "1.10.2"
 springBoot = "4.0.5"
+clouderaSpark = "3.3.0.3.3.7180.2-4"
+clouderaHive = "3.1.3000.7.1.8.0-801"
+clouderaHadoop = "3.1.1.7.1.8.0-801"
+postgresql = "42.7.7"
+junit = "6.0.3"
+testcontainers = "2.0.4"
 
 [libraries]
 kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
@@ -16,10 +22,27 @@ kotlinSpringPlugin = { module = "org.jetbrains.kotlin.plugin.spring:org.jetbrain
 kotlinxDatetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
 kotlinxSerialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJSON" }
 kotlinxCoroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
+postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
+junitJupiterApi = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit" }
+junitJupiterEngine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit" }
+junitPlatformLauncher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit" }
+testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
+testcontainersJunit = { module = "org.testcontainers:testcontainers-junit-jupiter", version.ref = "testcontainers" }
+testcontainersPostgresql = { module = "org.testcontainers:testcontainers-postgresql", version.ref = "testcontainers" }
+
+clouderaHiveMetastore = { module = "org.apache.hive:hive-metastore", version.ref = "clouderaHive" }
+clouderaHiveStandaloneMetastore = { module = "org.apache.hive:hive-standalone-metastore", version.ref = "clouderaHive" }
+clouderaHadoopCommon = { module = "org.apache.hadoop:hadoop-common", version.ref = "clouderaHadoop" }
+clouderaSparkCore = { module = "org.apache.spark:spark-core_2.12", version.ref = "clouderaSpark" }
+clouderaSparkSql = { module = "org.apache.spark:spark-sql_2.12", version.ref = "clouderaSpark" }
+clouderaSparkHive = { module = "org.apache.spark:spark-hive_2.12", version.ref = "clouderaSpark" }
 
 # Libraries can be bundled together for easier import
 [bundles]
 kotlinxEcosystem = ["kotlinxDatetime", "kotlinxSerialization", "kotlinxCoroutines"]
+junit = ["junitJupiterApi", "junitJupiterEngine", "junitPlatformLauncher"]
+testcontainers = ["testcontainers", "testcontainersJunit", "testcontainersPostgresql"]
+clouderaSpark = ["clouderaSparkCore", "clouderaSparkSql", "clouderaSparkHive"]
 
 [plugins]
 kotlinPluginSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
