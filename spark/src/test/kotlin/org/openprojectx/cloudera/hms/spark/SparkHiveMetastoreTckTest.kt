@@ -39,7 +39,7 @@ class SparkHiveMetastoreTckTest {
             .enableHiveSupport()
             .getOrCreate()
 
-        spark.sparkContext().setLogLevel("WARN")
+//        spark.sparkContext().setLogLevel("WARN")
 
         try {
             spark.sql("CREATE DATABASE $databaseName")
