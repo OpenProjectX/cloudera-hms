@@ -54,7 +54,7 @@ The metastore runtime in `core`:
 
 Default configuration is defined in [ClouderaHiveMetastoreConfig.kt](/data/Git/cloudera-hms/core/src/main/kotlin/org/openprojectx/cloudera/hms/core/ClouderaHiveMetastoreConfig.kt).
 
-Server bootstrap happens in [HiveMetastoreServerMain.kt](/data/Git/cloudera-hms/core/src/main/kotlin/org/openprojectx/cloudera/hms/core/HiveMetastoreServerMain.kt).
+Server bootstrap happens in [HiveMetastoreServerMain.kt](core/src/main/kotlin/org/openprojectx/cloudera/hms/core/HiveMetastoreServerMain.kt).
 
 ## Configuration
 
