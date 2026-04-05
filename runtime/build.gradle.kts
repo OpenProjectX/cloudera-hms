@@ -53,9 +53,13 @@ configurations.configureEach {
 //        }
 
 }
+val shaded: Configuration by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+}
 
 dependencies {
-    implementation(project(":core")) {
+    shaded(project(":core")) {
 
     }
 }
@@ -65,6 +69,7 @@ tasks.jar {
 }
 
 tasks.shadowJar {
+    configurations = listOf(shaded)
     archiveClassifier.set("")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     mergeServiceFiles()
@@ -120,6 +125,15 @@ publishing {
             artifact(tasks.named("sourcesJar"))
             artifact(tasks.named("javadocJar"))
             artifactId = project.name
+
+//            pom.withXml {
+//                val deps = asNode().get("dependencies")
+//                if (deps is groovy.util.NodeList) {
+//                    deps.forEach { node ->
+//                        (node as groovy.util.Node).parent().remove(node)
+//                    }
+//                }
+//            }
 
             pom {
                 name.set(project.name)
