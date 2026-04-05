@@ -9,7 +9,7 @@ plugins {
 }
 
 allprojects {
-    group = "org.openprojectx.cloudera.hms.core"
+    group = "org.openprojectx.cloudera.hms"
 }
 
 
