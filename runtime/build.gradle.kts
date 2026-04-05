@@ -1,5 +1,6 @@
 import com.github.jengelman.gradle.plugins.shadow.transformers.Log4j2PluginsCacheFileTransformer
 import org.gradle.api.file.DuplicatesStrategy
+import org.gradle.api.publish.maven.MavenPublication
 
 plugins {
     id("buildsrc.convention.kotlin-jvm")
@@ -57,7 +58,7 @@ tasks.jar {
 }
 
 tasks.shadowJar {
-    archiveClassifier.set("all")
+    archiveClassifier.set("")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     mergeServiceFiles()
     transform(Log4j2PluginsCacheFileTransformer::class.java)
@@ -95,11 +96,21 @@ tasks.shadowJar {
         "org.apache.parquet",
         "com.fasterxml.jackson",
         "io.netty",
-        "org.apache.commons"
+        "org.apache.commons",
+        "org.apache.http"
     )
         .forEach {
             relocate(it, "$shadedPrefix.$it")
         }
 
 
+}
+
+publishing {
+    publications.named<MavenPublication>("mavenJava") {
+        setArtifacts(emptyList<Any>())
+        artifact(tasks.shadowJar)
+        artifact(tasks.sourcesJar)
+        artifact(tasks.javadocJar)
+    }
 }
