@@ -52,6 +52,7 @@ The metastore runtime in `core`:
 - allows overriding the schema with a custom SQL file
 - accepts additional HMS-side Hadoop or Hive configuration entries such as `fs.s3a.*`
 - can generate a simple Log4j 2 configuration with configurable root log level
+- can be packaged as a shaded `-all` jar via the Shadow plugin
 - exposes a small Kotlin API for starting the metastore in a dedicated JVM process
 
 Default configuration is defined in [ClouderaHiveMetastoreConfig.kt](/data/Git/cloudera-hms/core/src/main/kotlin/org/openprojectx/cloudera/hms/core/ClouderaHiveMetastoreConfig.kt).
@@ -130,6 +131,7 @@ Useful commands:
 
 ```bash
 GRADLE_USER_HOME=/data/.gradle ./gradlew :core:test
+GRADLE_USER_HOME=/data/.gradle ./gradlew :core:shadowJar
 GRADLE_USER_HOME=/data/.gradle ./gradlew :spark:test
 GRADLE_USER_HOME=/data/.gradle ./gradlew :spark:compileTestKotlin
 ```

@@ -1,5 +1,6 @@
 plugins {
     id("buildsrc.convention.kotlin-jvm")
+    alias(libs.plugins.shadow)
 }
 
 configurations.configureEach {
@@ -13,6 +14,11 @@ configurations.configureEach {
 
 
 
+}
+
+tasks.shadowJar {
+    archiveClassifier.set("all")
+    mergeServiceFiles()
 }
 
 dependencies {

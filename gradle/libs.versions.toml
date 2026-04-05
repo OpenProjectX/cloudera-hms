@@ -17,6 +17,7 @@ junit = "6.0.3"
 testcontainers = "2.0.4"
 iceberg = "1.5.2"
 awsSdk = "2.31.65"
+shadow = "9.0.0"
 
 [libraries]
 kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
@@ -65,3 +66,4 @@ spark-iceberg = ["iceberg-core", "iceberg-spark", "iceberg-spark-extensions", "i
 
 [plugins]
 kotlinPluginSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
