@@ -19,9 +19,13 @@ dependencies {
 //    implementation("org.apache.spark:spark-core_2.13:3.3.2")
 //    implementation("org.apache.spark:spark-hive_2.13:3.3.2")
 
-    implementation("org.apache.spark:spark-sql_2.12:3.3.2.3.3.7190.9-1")
-    implementation("org.apache.spark:spark-core_2.12:3.3.2.3.3.7190.9-1")
-    implementation("org.apache.spark:spark-hive_2.12:3.3.2.3.3.7190.9-1")
+//    testImplementation("org.apache.spark:spark-sql_2.12:3.3.2.3.3.7190.9-1")
+//    testImplementation("org.apache.spark:spark-core_2.12:3.3.2.3.3.7190.9-1")
+//    testImplementation("org.apache.spark:spark-hive_2.12:3.3.2.3.3.7190.9-1")
+
+    testImplementation("org.apache.spark:spark-sql_2.12:3.3.0.3.3.7180.2-4")
+    testImplementation("org.apache.spark:spark-core_2.12:3.3.0.3.3.7180.2-4")
+    testImplementation("org.apache.spark:spark-hive_2.12:3.3.0.3.3.7180.2-4")
 
 
 
