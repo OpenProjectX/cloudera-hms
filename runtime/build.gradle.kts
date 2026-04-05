@@ -48,7 +48,7 @@ configurations.configureEach {
 }
 
 dependencies {
-    implementation(project(":core")) {
+    compileOnly(project(":core")) {
 
     }
 }

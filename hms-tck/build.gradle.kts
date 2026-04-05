@@ -13,10 +13,15 @@ configurations.configureEach {
     resolutionStrategy.force("org.slf4j:slf4j-api:1.7.36")
 }
 
+//repositories {
+//    mavenLocal()
+//}
+
 dependencies {
     testImplementation(project(":core")) {
         exclude("org.apache.parquet", module = "parquet-hadoop-bundle")
     }
+//    testImplementation("org.openprojectx.cloudera.hms:runtime:0.1.2")
     testImplementation(project(":junit5"))
 
     testImplementation(libs.clouderaHiveMetastore)
