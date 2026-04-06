@@ -2,18 +2,89 @@
 
 Standalone Cloudera-compatible Hive Metastore for local development, implemented in Kotlin and aligned to the Cloudera Spark stack.
 
-## Modules
-
-- `core`: metastore runtime, PostgreSQL schema bootstrap, and configuration helpers
-- `runtime`: shaded standalone runtime jar for launching the metastore
-- `image`: Jib-based container image assembly for a combined PostgreSQL plus Hive metastore runtime
-- `junit5`: annotation-driven JUnit 5 support that provisions PostgreSQL and starts the metastore for tests
-- `hms-tck-core`: reusable Java 11-compatible Hive metastore TCK contract and assertions
-- `hms-tck`: Java 17 TCK implementations for the in-process `core` and shaded `runtime` executions
-- `testcontainers`: JDK 11 Testcontainers wrapper for the built metastore image
-- `spark`: Spark-facing TCKs that validate Spark SQL and Iceberg against the metastore
-
 ## Getting Started
+
+### JUnit 5
+
+Add the dependency:
+
+```kotlin
+dependencies {
+    testImplementation("org.openprojectx.cloudera.hms:junit5:<version>")
+}
+```
+
+Use [ClouderaHiveMetastoreTest.kt](/data/Git/cloudera-hms/junit5/src/main/kotlin/org/openprojectx/cloudera/hms/junit5/ClouderaHiveMetastoreTest.kt):
+
+```kotlin
+@ClouderaHiveMetastoreTest(
+    postgresImage = "postgres:14",
+    schemaSqlPath = "/hive-schema-3.1.3000.postgres.sql",
+    logLevel = "DEBUG",
+)
+class MyMetastoreTest
+```
+
+Supported annotation attributes:
+
+- `postgresImage`: overrides the PostgreSQL Testcontainers image
+- `schemaSqlPath`: accepts either a filesystem path or a classpath resource path
+- `logLevel`: configures the generated HMS server Log4j 2 root level
+
+### Testcontainers
+
+Add the dependency:
+
+```kotlin
+dependencies {
+    testImplementation("org.openprojectx.cloudera.hms:testcontainers:<version>")
+}
+```
+
+Use the default image:
+
+```kotlin
+val metastore = ClouderaHiveMetastoreContainer()
+    .withDatabaseName("metastore_db")
+    .withDatabaseUser("hive")
+    .withDatabasePassword("hive-password")
+```
+
+Use a custom image explicitly:
+
+```kotlin
+val metastore = ClouderaHiveMetastoreContainer.withImage("my-registry/cloudera-hms:test")
+    .withDatabaseName("metastore_db")
+    .withDatabaseUser("hive")
+    .withDatabasePassword("hive-password")
+```
+
+Or set `CLOUDERA_HMS_TEST_IMAGE` and keep using the default constructor.
+
+Typical JUnit 5 and Testcontainers usage:
+
+```kotlin
+import org.junit.jupiter.api.Test
+import org.testcontainers.junit.jupiter.Container
+import org.testcontainers.junit.jupiter.Testcontainers
+
+@Testcontainers
+class MyMetastoreContainerTest {
+    @Container
+    private val metastore = ClouderaHiveMetastoreContainer()
+        .withDatabaseName("metastore_db")
+        .withDatabaseUser("hive")
+        .withDatabasePassword("hive-password")
+
+    @Test
+    fun testMetastore() {
+        val thriftUri = metastore.thriftUri()
+        // Create a HiveMetaStoreClient or your application client here.
+    }
+}
+```
+
+### Build and run locally
 
 Start a local PostgreSQL if you want to run the metastore against a local database:
 
@@ -34,6 +105,17 @@ CLOUDERA_HMS_BASE_IMAGE=your-registry/postgres-jdk17:tag GRADLE_USER_HOME=/data/
 ```
 
 For contributor-oriented build commands, version alignment, and verification notes, see [CONTRIBUTING.md](/data/Git/cloudera-hms/CONTRIBUTING.md).
+
+## Modules
+
+- `core`: metastore runtime, PostgreSQL schema bootstrap, and configuration helpers
+- `runtime`: shaded standalone runtime jar for launching the metastore
+- `image`: Jib-based container image assembly for a combined PostgreSQL plus Hive metastore runtime
+- `junit5`: annotation-driven JUnit 5 support that provisions PostgreSQL and starts the metastore for tests
+- `hms-tck-core`: reusable Java 11-compatible Hive metastore TCK contract and assertions
+- `hms-tck`: Java 17 TCK implementations for the in-process `core` and shaded `runtime` executions
+- `testcontainers`: JDK 11 Testcontainers wrapper for the built metastore image
+- `spark`: Spark-facing TCKs that validate Spark SQL and Iceberg against the metastore
 
 ## Configuration
 
@@ -67,64 +149,9 @@ Default configuration is defined in [ClouderaHiveMetastoreConfig.kt](/data/Git/c
 
 The `junit5` module provides [ClouderaHiveMetastoreTest.kt](/data/Git/cloudera-hms/junit5/src/main/kotlin/org/openprojectx/cloudera/hms/junit5/ClouderaHiveMetastoreTest.kt), which starts PostgreSQL plus a metastore process for a test class.
 
-Add the dependency:
-
-```kotlin
-dependencies {
-    testImplementation("org.openprojectx.cloudera.hms:junit5:<version>")
-}
-```
-
-Use the annotation:
-
-```kotlin
-@ClouderaHiveMetastoreTest(
-    postgresImage = "postgres:14",
-    schemaSqlPath = "/hive-schema-3.1.3000.postgres.sql",
-    logLevel = "DEBUG",
-)
-class MyMetastoreTest
-```
-
-Supported annotation attributes:
-
-- `postgresImage`: overrides the PostgreSQL Testcontainers image
-- `schemaSqlPath`: accepts either a filesystem path or a classpath resource path
-- `logLevel`: configures the generated HMS server Log4j 2 root level
-
 ## Testcontainers
 
-The `testcontainers` module wraps the built metastore image for integration tests on JDK 11+.
-
-Add the dependency:
-
-```kotlin
-dependencies {
-    testImplementation("org.openprojectx.cloudera.hms:testcontainers:<version>")
-}
-```
-
-Use the default image:
-
-```kotlin
-val metastore = ClouderaHiveMetastoreContainer()
-    .withDatabaseName("metastore_db")
-    .withDatabaseUser("hive")
-    .withDatabasePassword("hive-password")
-```
-
-Use a custom image explicitly:
-
-```kotlin
-val metastore = ClouderaHiveMetastoreContainer.withImage("my-registry/cloudera-hms:test")
-    .withDatabaseName("metastore_db")
-    .withDatabaseUser("hive")
-    .withDatabasePassword("hive-password")
-```
-
-Or set `CLOUDERA_HMS_TEST_IMAGE` and continue using the default constructor.
-
-The main entry point is [ClouderaHiveMetastoreContainer.kt](/data/Git/cloudera-hms/testcontainers/src/main/kotlin/org/openprojectx/cloudera/hms/testcontainers/ClouderaHiveMetastoreContainer.kt). The module also reuses the shared TCK from `hms-tck-core` for its own integration coverage.
+The `testcontainers` module wraps the built metastore image for integration tests on JDK 11+. The main entry point is [ClouderaHiveMetastoreContainer.kt](/data/Git/cloudera-hms/testcontainers/src/main/kotlin/org/openprojectx/cloudera/hms/testcontainers/ClouderaHiveMetastoreContainer.kt). The module also reuses the shared TCK from `hms-tck-core` for its own integration coverage.
 
 ## Container image
 
