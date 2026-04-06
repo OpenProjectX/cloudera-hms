@@ -2,18 +2,7 @@ package org.openprojectx.cloudera.hms.tck
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient
-import org.apache.hadoop.hive.metastore.TableType
-import org.apache.hadoop.hive.metastore.api.Database
-import org.apache.hadoop.hive.metastore.api.FieldSchema
-import org.apache.hadoop.hive.metastore.api.Partition
-import org.apache.hadoop.hive.metastore.api.SerDeInfo
-import org.apache.hadoop.hive.metastore.api.StorageDescriptor
-import org.apache.hadoop.hive.metastore.api.Table
 import org.apache.hadoop.hive.metastore.conf.MetastoreConf
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Test
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
 import java.io.BufferedReader
@@ -27,106 +16,11 @@ import java.time.Duration
 import java.time.Instant
 import java.util.Locale
 import java.util.Properties
-import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.io.path.writeText
 import kotlin.use
 
-abstract class AbstractHiveMetastoreClientTck {
-    @Test
-    fun `supports Hive metastore lifecycle operations`() {
-        postgresContainer().use { postgres ->
-            postgres.start()
-
-            val warehouseDir = Files.createTempDirectory("cloudera-hms-tck-warehouse-")
-            classpathMetastore(
-                HmsTckConfig(
-                    port = freePort(),
-                    warehouseDir = warehouseDir,
-                    jdbcUrl = postgres.jdbcUrl,
-                    jdbcUser = postgres.username,
-                    jdbcPassword = postgres.password,
-                    schemaResource = schemaSqlPath(),
-                    logLevel = logLevel(),
-                )
-            ).use { metastore ->
-                val databaseName = "db_${UUID.randomUUID().toString().replace("-", "").take(8)}"
-                val tableName = "events"
-                val renamedTableName = "events_archive"
-
-                metastore.createClient().use { client ->
-                    client.createDatabase(
-                        Database().apply {
-                            name = databaseName
-                            locationUri = metastore.config.warehouseDir.resolve(databaseName).toUri().toString()
-                        }
-                    )
-
-                    client.createTable(
-                        Table().apply {
-                            setDbName(databaseName)
-                            setTableName(tableName)
-                            setOwner("integration-test")
-                            setTableType(TableType.MANAGED_TABLE.name)
-                            setPartitionKeys(listOf(FieldSchema("dt", "string", null)))
-                            setSd(StorageDescriptor().apply {
-                                setCols(
-                                    listOf(
-                                        FieldSchema("event_id", "string", null),
-                                        FieldSchema("user_id", "bigint", null),
-                                    )
-                                )
-                                setInputFormat("org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat")
-                                setOutputFormat("org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat")
-                                setSerdeInfo(
-                                    SerDeInfo().apply {
-                                        setSerializationLib("org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe")
-                                    }
-                                )
-                                setLocation(
-                                    metastore.config.warehouseDir.resolve("$databaseName.db/$tableName").toUri().toString()
-                                )
-                            })
-                        }
-                    )
-
-                    client.add_partition(
-                        Partition().apply {
-                            setDbName(databaseName)
-                            setTableName(tableName)
-                            setValues(listOf("2026-04-05"))
-                            setSd(
-                                client.getTable(databaseName, tableName).sd.deepCopy().apply {
-                                    setLocation(
-                                        metastore.config.warehouseDir
-                                            .resolve("$databaseName.db/$tableName/dt=2026-04-05")
-                                            .toUri()
-                                            .toString()
-                                    )
-                                }
-                            )
-                        }
-                    )
-
-                    val loadedPartition = client.getPartition(databaseName, tableName, "dt=2026-04-05")
-                    assertEquals(listOf("2026-04-05"), loadedPartition.values)
-                    assertEquals(listOf("events"), client.getAllTables(databaseName))
-
-                    val table = client.getTable(databaseName, tableName)
-                    table.setTableName(renamedTableName)
-                    client.alter_table(databaseName, tableName, table)
-
-                    assertTrue(client.tableExists(databaseName, renamedTableName))
-                    assertFalse(client.tableExists(databaseName, tableName))
-                    assertEquals(listOf("dt=2026-04-05"), client.listPartitionNames(databaseName, renamedTableName, 10))
-
-                    client.dropTable(databaseName, renamedTableName)
-                    client.dropDatabase(databaseName, true, true, true)
-                }
-            }
-        }
-    }
-
+abstract class AbstractHiveMetastoreClientTck : AbstractReusableHiveMetastoreClientTck() {
     protected open fun postgresImage(): String = "postgres:14"
 
     protected open fun schemaSqlPath(): String = "/hive-schema-3.1.3000.postgres.sql"
@@ -135,6 +29,30 @@ abstract class AbstractHiveMetastoreClientTck {
 
     protected open fun classpathMetastore(config: HmsTckConfig): ClasspathHiveMetastoreProcess =
         ClasspathHiveMetastoreProcess.start(config)
+
+    override fun metastoreUnderTest(): HiveMetastoreUnderTest {
+        val postgres = postgresContainer().apply { start() }
+        val warehouseDir = Files.createTempDirectory("cloudera-hms-tck-warehouse-")
+        val metastore = classpathMetastore(
+            HmsTckConfig(
+                port = freePort(),
+                warehouseDir = warehouseDir,
+                jdbcUrl = postgres.jdbcUrl,
+                jdbcUser = postgres.username,
+                jdbcPassword = postgres.password,
+                schemaResource = schemaSqlPath(),
+                logLevel = logLevel(),
+            )
+        )
+        return ManagedHiveMetastoreUnderTest(
+            warehouseDir = warehouseDir,
+            createClient = metastore::createClient,
+            onClose = {
+                metastore.close()
+                postgres.stop()
+            },
+        )
+    }
 
     private fun postgresContainer(): PostgreSQLContainer<*> =
         PostgreSQLContainer(
@@ -174,8 +92,11 @@ data class HmsTckConfig(
 class ClasspathHiveMetastoreProcess private constructor(
     val config: HmsTckConfig,
     private val process: Process,
-) : AutoCloseable {
-    fun createClient(): HiveMetaStoreClient = HiveMetaStoreClient(newClientConfiguration(config))
+) : HiveMetastoreUnderTest {
+    override val warehouseDir: Path
+        get() = config.warehouseDir
+
+    override fun createClient(): HiveMetaStoreClient = HiveMetaStoreClient(newClientConfiguration(config))
 
     override fun close() {
         if (!process.isAlive) {
@@ -312,5 +233,17 @@ class ClasspathHiveMetastoreProcess private constructor(
             )
             return file
         }
+    }
+}
+
+private class ManagedHiveMetastoreUnderTest(
+    override val warehouseDir: Path,
+    private val createClient: () -> HiveMetaStoreClient,
+    private val onClose: () -> Unit,
+) : HiveMetastoreUnderTest {
+    override fun createClient(): HiveMetaStoreClient = createClient.invoke()
+
+    override fun close() {
+        onClose.invoke()
     }
 }

@@ -1,7 +1,6 @@
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.kotlin.dsl.named
-
 plugins {
     id("buildsrc.convention.kotlin-jvm")
 }
@@ -32,15 +31,16 @@ val runtimeTck: SourceSet = sourceSets.create("runtimeTck") {
 }
 
 dependencies {
-    api(libs.junitJupiterApi)
+    api(project(":hms-tck-core"))
     api(libs.clouderaHiveMetastore)
-
     implementation(libs.testcontainersPostgresql)
 
     add("${coreTck.name}Implementation", sourceSets.named("main").get().output)
+    add("${coreTck.name}Implementation", project(":hms-tck-core"))
     add("${coreTck.name}RuntimeOnly", project(":core"))
 
     add("${runtimeTck.name}Implementation", sourceSets.named("main").get().output)
+    add("${runtimeTck.name}Implementation", project(":hms-tck-core"))
     add(
         "${runtimeTck.name}RuntimeOnly",
         project(mapOf("path" to ":runtime", "configuration" to "shadedRuntimeElements"))
