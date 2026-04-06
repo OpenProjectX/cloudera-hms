@@ -31,6 +31,7 @@ val runtimeTck: SourceSet = sourceSets.create("runtimeTck") {
 }
 
 dependencies {
+    api(platform(libs.junitBom))
     api(project(":hms-tck-core"))
     api(libs.clouderaHiveMetastore)
     implementation(libs.testcontainersPostgresql)
@@ -47,6 +48,7 @@ dependencies {
     )
 
     listOf(coreTck, runtimeTck).forEach { sourceSet ->
+        add("${sourceSet.name}Implementation", platform(libs.junitBom))
         add("${sourceSet.name}Implementation", libs.junitJupiterApi)
         add("${sourceSet.name}Implementation", libs.junitJupiterEngine)
         add("${sourceSet.name}Implementation", libs.testcontainersPostgresql)

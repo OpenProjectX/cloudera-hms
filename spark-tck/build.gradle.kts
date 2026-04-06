@@ -22,6 +22,7 @@ configurations.configureEach {
 }
 
 dependencies {
+    testImplementation(platform(libs.junitBom))
     testImplementation(project(":core")) {
         exclude("org.apache.parquet", module = "parquet-hadoop-bundle")
     }
@@ -38,7 +39,8 @@ dependencies {
 
 
     testImplementation(libs.awsSdkS3)
-    testImplementation(libs.bundles.junit)
+    testImplementation(libs.junitJupiterApi)
+    testImplementation(libs.junitJupiterEngine)
     testImplementation(libs.bundles.testcontainers)
     testRuntimeOnly(libs.junitPlatformLauncher)
 }

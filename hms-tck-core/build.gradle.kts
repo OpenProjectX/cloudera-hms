@@ -12,6 +12,7 @@ kotlin {
 }
 
 dependencies {
+    api(platform(libs.junitBom))
     api(libs.clouderaHiveMetastore)
-    api("org.junit.jupiter:junit-jupiter-api:5.11.4")
+    api(libs.junitJupiterApi)
 }
