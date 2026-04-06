@@ -64,10 +64,12 @@ val shaded: Configuration = configurations.create("shaded") {
     isCanBeResolved = true
 }
 
+val shadowDependencies: Configuration = configurations.named("shadow").get()
+
 val shadedRuntimeElements: Configuration = configurations.create("shadedRuntimeElements") {
     isCanBeConsumed = true
     isCanBeResolved = false
-    extendsFrom(configurations.runtimeOnly.get())
+    extendsFrom(shadowDependencies)
 
     attributes {
         attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_RUNTIME))
@@ -83,7 +85,7 @@ dependencies {
     add(shaded.name, project(":core"))
 
     // DataNucleus uses plugin.xml discovery and must stay in dedicated jars.
-    runtimeOnly(libs.bundles.datanucleus)
+    add(shadowDependencies.name, libs.bundles.datanucleus)
 }
 
 tasks.jar {
@@ -130,6 +132,8 @@ tasks.named<ShadowJar>("shadowJar") {
         "org.apache.thrift",
         "org.apache.zookeeper",
         "org.apache.parquet",
+//        "org.apache.hive",
+//        "org.apache.hadoop",
         "org.apache.avro",
         "org.apache.parquet",
         "com.fasterxml.jackson",

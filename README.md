@@ -69,6 +69,7 @@ The `runtime` module:
 - relocates selected third-party packages to reduce conflict risk with host applications
 - keeps the exclusions already declared in `core` as exclusions rather than relocating them
 - leaves the DataNucleus JDO jars unshaded and published as normal transitive runtime dependencies, because their `plugin.xml` discovery does not survive jar shading safely
+- those external DataNucleus/JDO jars are carried by the `runtime` module's published runtime metadata, not merged into the shaded jar
 - does not relocate the Hive metastore or broad Hadoop packages, because the metastore's DataNucleus/JDO metadata expects those model classes at their original package names
 
 Packaging note:
