@@ -8,6 +8,7 @@ The current dependency baseline is driven from Cloudera Spark `3.3.0.3.3.7180.2-
 
 - `core`: metastore runtime, PostgreSQL schema bootstrap, configuration helpers, and Hive client TCK.
 - `junit5`: annotation-driven JUnit 5 support that provisions PostgreSQL and starts the metastore for tests.
+- `hms-tck`: reusable Hive metastore TCK plus internal executions against both the `core` classpath and the shaded `runtime` artifact.
 - `runtime`: shaded standalone runtime jar for launching the metastore with relocated third-party dependencies.
 - `spark`: Spark-facing TCKs that validate Spark SQL and Iceberg against the metastore.
 
@@ -67,6 +68,22 @@ The `runtime` module:
 - produces a shaded `-all` jar
 - relocates selected third-party packages to reduce conflict risk with host applications
 - keeps the exclusions already declared in `core` as exclusions rather than relocating them
+- leaves the DataNucleus JDO jars unshaded and published as normal transitive runtime dependencies, because their `plugin.xml` discovery does not survive jar shading safely
+- does not relocate the Hive metastore or broad Hadoop packages, because the metastore's DataNucleus/JDO metadata expects those model classes at their original package names
+
+Packaging note:
+
+- the published `runtime` artifact is still the main entry point for embedding or launching HMS
+- but the raw shaded jar alone is not intended to be copied in isolation anymore
+- consumers should resolve `org.openprojectx.cloudera.hms:runtime` through Gradle or Maven so the external DataNucleus/JDO jars are also present at runtime
+
+For modules inside this same repository, you do not need to publish `runtime` first. The module exposes a consumable `shadedRuntimeElements` configuration so sibling projects can depend on the shaded jar directly:
+
+```kotlin
+dependencies {
+    runtimeOnly(project(mapOf("path" to ":runtime", "configuration" to "shadedRuntimeElements")))
+}
+```
 
 Default configuration is defined in [ClouderaHiveMetastoreConfig.kt](/data/Git/cloudera-hms/core/src/main/kotlin/org/openprojectx/cloudera/hms/core/ClouderaHiveMetastoreConfig.kt).
 
@@ -135,6 +152,9 @@ The `spark` module excludes `org.slf4j:slf4j-reload4j` so Spark test logging sta
 
 Implemented test coverage:
 
+- reusable Hive metastore TCK support in [AbstractHiveMetastoreClientTck.kt](/data/Git/cloudera-hms/hms-tck/src/main/kotlin/org/openprojectx/cloudera/hms/tck/AbstractHiveMetastoreClientTck.kt)
+- internal core-classpath TCK execution in [CoreClasspathHiveMetastoreClientTckTest.kt](/data/Git/cloudera-hms/hms-tck/src/coreTck/kotlin/org/openprojectx/cloudera/hms/tck/CoreClasspathHiveMetastoreClientTckTest.kt)
+- internal shaded-runtime TCK execution in [RuntimeShadedHiveMetastoreClientTckTest.kt](/data/Git/cloudera-hms/hms-tck/src/runtimeTck/kotlin/org/openprojectx/cloudera/hms/tck/RuntimeShadedHiveMetastoreClientTckTest.kt)
 - Hive metastore client TCK in [HiveMetastoreClientTckTest.kt](/data/Git/cloudera-hms/core/src/test/kotlin/org/openprojectx/cloudera/hms/core/HiveMetastoreClientTckTest.kt)
 - Spark integration TCK in [SparkHiveMetastoreTckTest.kt](/data/Git/cloudera-hms/spark/src/test/kotlin/org/openprojectx/cloudera/hms/spark/SparkHiveMetastoreTckTest.kt)
 - Spark Iceberg over S3 TCK using LocalStack in [SparkIcebergS3TckTest.kt](/data/Git/cloudera-hms/spark/src/test/kotlin/org/openprojectx/cloudera/hms/spark/SparkIcebergS3TckTest.kt)
@@ -144,6 +164,8 @@ Useful commands:
 
 ```bash
 GRADLE_USER_HOME=/data/.gradle ./gradlew :core:test
+GRADLE_USER_HOME=/data/.gradle ./gradlew :hms-tck:coreTckTest
+GRADLE_USER_HOME=/data/.gradle ./gradlew :hms-tck:runtimeTckTest
 GRADLE_USER_HOME=/data/.gradle ./gradlew :runtime:shadowJar
 GRADLE_USER_HOME=/data/.gradle ./gradlew :spark:test
 GRADLE_USER_HOME=/data/.gradle ./gradlew :spark:compileTestKotlin

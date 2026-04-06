@@ -1,4 +1,10 @@
 import com.github.jengelman.gradle.plugins.shadow.transformers.Log4j2PluginsCacheFileTransformer
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import org.gradle.api.artifacts.Configuration
+import org.gradle.api.attributes.Bundling
+import org.gradle.api.attributes.Category
+import org.gradle.api.attributes.LibraryElements
+import org.gradle.api.attributes.Usage
 import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.tasks.GenerateModuleMetadata
@@ -53,27 +59,50 @@ configurations.configureEach {
 //        }
 
 }
-val shaded: Configuration by configurations.creating {
+val shaded: Configuration = configurations.create("shaded") {
     isCanBeConsumed = false
     isCanBeResolved = true
 }
 
-dependencies {
-    shaded(project(":core")) {
+val shadedRuntimeElements: Configuration = configurations.create("shadedRuntimeElements") {
+    isCanBeConsumed = true
+    isCanBeResolved = false
+    extendsFrom(configurations.runtimeOnly.get())
 
+    attributes {
+        attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_RUNTIME))
+        attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.LIBRARY))
+        attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.SHADOWED))
+        attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.JAR))
     }
+
+    outgoing.artifact(tasks.named("shadowJar"))
+}
+
+dependencies {
+    add(shaded.name, project(":core"))
+
+    // DataNucleus uses plugin.xml discovery and must stay in dedicated jars.
+    runtimeOnly(libs.bundles.datanucleus)
 }
 
 tasks.jar {
     enabled = false
 }
 
-tasks.shadowJar {
+tasks.named<ShadowJar>("shadowJar") {
     configurations = listOf(shaded)
     archiveClassifier.set("")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     mergeServiceFiles()
     transform(Log4j2PluginsCacheFileTransformer::class.java)
+
+    dependencies {
+        exclude(dependency("org.datanucleus:datanucleus-api-jdo:.*"))
+        exclude(dependency("org.datanucleus:datanucleus-core:.*"))
+        exclude(dependency("org.datanucleus:datanucleus-rdbms:.*"))
+        exclude(dependency("org.datanucleus:javax.jdo:.*"))
+    }
 
     exclude("META-INF/DEPENDENCIES")
     exclude("META-INF/LICENSE")
@@ -86,7 +115,6 @@ tasks.shadowJar {
     exclude("META-INF/*.DSA")
     exclude("META-INF/*.RSA")
     exclude("git.properties")
-    exclude("plugin.xml")
     exclude("META-INF/jersey-module-version")
 
     manifest {
@@ -102,8 +130,6 @@ tasks.shadowJar {
         "org.apache.thrift",
         "org.apache.zookeeper",
         "org.apache.parquet",
-        "org.apache.hive",
-        "org.apache.hadoop",
         "org.apache.avro",
         "org.apache.parquet",
         "com.fasterxml.jackson",

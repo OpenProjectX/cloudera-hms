@@ -20,6 +20,9 @@ awsSdk = "2.31.65"
 shadow = "9.0.0"
 scalaFull = "2.12.15"
 scalaCollectionCompat = "2.7.0"
+datanucleus = "5.2.10"
+datanucleusApiJdo = "5.2.8"
+datanucleusJdo = "3.2.0-release"
 
 [libraries]
 kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
@@ -58,6 +61,10 @@ scala-collection-compat =  { group = "org.scala-lang.modules", name = "scala-col
 
 awsSdkS3 = { module = "software.amazon.awssdk:s3", version.ref = "awsSdk" }
 parquet = { module = "org.apache.parquet:parquet-avro", version.ref = "parquet" }
+datanucleusCore = { module = "org.datanucleus:datanucleus-core", version.ref = "datanucleus" }
+datanucleusApiJdo = { module = "org.datanucleus:datanucleus-api-jdo", version.ref = "datanucleusApiJdo" }
+datanucleusRdbms = { module = "org.datanucleus:datanucleus-rdbms", version.ref = "datanucleus" }
+datanucleusJdo = { module = "org.datanucleus:javax.jdo", version.ref = "datanucleusJdo" }
 
 
 # Libraries can be bundled together for easier import
@@ -72,6 +79,7 @@ clouderaHms = ["clouderaHiveMetastore", "clouderaHadoopCommon", "clouderaHiveExe
 
 #spark-iceberg = ["iceberg-core", "iceberg-spark", "iceberg-spark-extensions", "iceberg-hive-metastore"]
 spark-iceberg-runtime = ["icebergSparkRuntime","scala-collection-compat" ]
+datanucleus = ["datanucleusApiJdo", "datanucleusCore", "datanucleusRdbms", "datanucleusJdo"]
 
 
 [plugins]
