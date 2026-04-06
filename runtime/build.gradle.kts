@@ -132,18 +132,14 @@ tasks.named<ShadowJar>("shadowJar") {
         "org.apache.thrift",
         "org.apache.zookeeper",
         "org.apache.parquet",
-//        "org.apache.hive",
-//        "org.apache.hadoop",
         "org.apache.avro",
-        "org.apache.parquet",
         "com.fasterxml.jackson",
         "io.netty",
         "org.apache.commons",
         "org.apache.http"
-    )
-        .forEach {
-            relocate(it, "$shadedPrefix.$it")
-        }
+    ).forEach {
+        relocate(it, "$shadedPrefix.$it")
+    }
 
 
 }
