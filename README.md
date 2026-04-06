@@ -7,9 +7,11 @@ The current dependency baseline is driven from Cloudera Spark `3.3.0.3.3.7180.2-
 ## Modules
 
 - `core`: metastore runtime, PostgreSQL schema bootstrap, configuration helpers, and Hive client TCK.
+- `image`: Jib-based container image assembly for a combined PostgreSQL plus Hive metastore runtime.
 - `junit5`: annotation-driven JUnit 5 support that provisions PostgreSQL and starts the metastore for tests.
 - `hms-tck`: reusable Hive metastore TCK plus internal executions against both the `core` classpath and the shaded `runtime` artifact.
 - `runtime`: shaded standalone runtime jar for launching the metastore with relocated third-party dependencies.
+- `testcontainers`: JDK 11 Testcontainers wrapper for the built metastore image.
 - `spark`: Spark-facing TCKs that validate Spark SQL and Iceberg against the metastore.
 
 ## Version alignment
@@ -86,6 +88,50 @@ dependencies {
 }
 ```
 
+## Container image
+
+The `image` module builds a runnable container image with Jib. The image expects a base image that already includes:
+
+- PostgreSQL
+- JDK 17
+- the standard PostgreSQL container entrypoint at `/usr/local/bin/docker-entrypoint.sh`
+
+Build configuration is environment-variable driven:
+
+- `CLOUDERA_HMS_BASE_IMAGE`: required base image reference
+- `CLOUDERA_HMS_IMAGE`: target image name, defaults to `cloudera-hms:local`
+- `CLOUDERA_HMS_IMAGE_TAGS`: optional comma-separated extra tags
+
+Runtime configuration is also environment-variable driven. The image supports:
+
+- `POSTGRES_DB`
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD`
+- `POSTGRES_PORT`
+- `HMS_HOST`
+- `HMS_PORT`
+- `HMS_WAREHOUSE_DIR`
+- `HMS_JDBC_URL`
+- `HMS_JDBC_USER`
+- `HMS_JDBC_PASSWORD`
+- `HMS_JDBC_DRIVER`
+- `HMS_INITIALIZE_SCHEMA`
+- `HMS_SCHEMA_RESOURCE`
+- `HMS_SCHEMA_FILE`
+- `HMS_EXTRA_CONFIG_FILE`
+- `HMS_EXTRA_CONF`
+- `HMS_LOG_LEVEL`
+- `JAVA_OPTS`
+
+Extra Hive or Hadoop properties can be passed either as newline-delimited `HMS_EXTRA_CONF` entries or as individual `HMS_CONF_*` environment variables, where `_` maps to `.` and `__` maps to `-`.
+
+Useful commands:
+
+```bash
+CLOUDERA_HMS_BASE_IMAGE=your-registry/postgres-jdk17:tag GRADLE_USER_HOME=/data/.gradle ./gradlew :image:jibBuildTar
+CLOUDERA_HMS_BASE_IMAGE=your-registry/postgres-jdk17:tag GRADLE_USER_HOME=/data/.gradle ./gradlew :image:jibDockerBuild
+```
+
 Default configuration is defined in [ClouderaHiveMetastoreConfig.kt](/data/Git/cloudera-hms/core/src/main/kotlin/org/openprojectx/cloudera/hms/core/ClouderaHiveMetastoreConfig.kt).
 
 Server bootstrap happens in [HiveMetastoreServerMain.kt](core/src/main/kotlin/org/openprojectx/cloudera/hms/core/HiveMetastoreServerMain.kt).
@@ -139,6 +185,18 @@ Supported annotation attributes:
 - `schemaSqlPath`: accepts either a filesystem path or a classpath resource path
 - `logLevel`: configures the generated HMS server Log4j 2 root level
 
+## Testcontainers wrapper
+
+The `testcontainers` module targets JDK 11 and wraps the image built by `:image`.
+
+The main entry point is [ClouderaHiveMetastoreContainer.kt](/data/Git/cloudera-hms/testcontainers/src/main/kotlin/org/openprojectx/cloudera/hms/testcontainers/ClouderaHiveMetastoreContainer.kt). By default it uses `cloudera-hms:local`, or `CLOUDERA_HMS_TEST_IMAGE` when that variable is set.
+
+Useful command:
+
+```bash
+CLOUDERA_HMS_BASE_IMAGE=your-registry/postgres-jdk17:tag GRADLE_USER_HOME=/data/.gradle ./gradlew :testcontainers:test
+```
+
 Breaking change:
 
 - tests should now use `@ClouderaHiveMetastoreTest` instead of `@ExtendWith(ClouderaHiveMetastoreExtension::class)`
@@ -167,6 +225,7 @@ Useful commands:
 GRADLE_USER_HOME=/data/.gradle ./gradlew :core:test
 GRADLE_USER_HOME=/data/.gradle ./gradlew :hms-tck:coreTckTest
 GRADLE_USER_HOME=/data/.gradle ./gradlew :hms-tck:runtimeTckTest
+GRADLE_USER_HOME=/data/.gradle ./gradlew :image:compileKotlin :testcontainers:compileKotlin :testcontainers:compileTestKotlin
 GRADLE_USER_HOME=/data/.gradle ./gradlew :runtime:shadowJar
 GRADLE_USER_HOME=/data/.gradle ./gradlew :spark:test
 GRADLE_USER_HOME=/data/.gradle ./gradlew :spark:compileTestKotlin

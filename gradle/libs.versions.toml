@@ -18,6 +18,7 @@ testcontainers = "2.0.4"
 iceberg = "1.8.1"
 awsSdk = "2.31.65"
 shadow = "9.0.0"
+jib = "3.4.5"
 scalaFull = "2.12.15"
 scalaCollectionCompat = "2.7.0"
 datanucleus = "5.2.10"
@@ -85,3 +86,4 @@ datanucleus = ["datanucleusApiJdo", "datanucleusCore", "datanucleusRdbms", "data
 [plugins]
 kotlinPluginSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
+jib = { id = "com.google.cloud.tools.jib", version.ref = "jib" }

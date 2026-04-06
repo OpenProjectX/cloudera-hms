@@ -27,7 +27,7 @@ subprojects {
 
     // Configure publishing only when the project has a Java component (Kotlin/JVM typically applies java too)
     plugins.withId("java") {
-        if (project.path == ":runtime") {
+        if (project.path == ":runtime" || project.path == ":image") {
             return@withId
         }
 
