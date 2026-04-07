@@ -65,7 +65,8 @@ wait_for_postgres() {
 
 render_log4j_config() {
   local output_file
-  output_file="$(mktemp)"
+  # Log4j2 infers configuration format from the filename extension.
+  output_file="$(mktemp --suffix=.properties)"
   cat > "$output_file" <<EOF
 name = HiveLog4j2
 

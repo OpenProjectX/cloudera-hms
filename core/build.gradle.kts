@@ -50,6 +50,8 @@ dependencies {
 //        exclude("org.apache.hadoop", "hadoop-yarn-registry")
 //        exclude("org.apache.calcite")
     }
+    implementation(libs.clouderaHadoopAws)
+
 
     implementation(libs.postgresql)
 

@@ -38,7 +38,8 @@ dependencies {
 //    testImplementation(libs.parquet)
 
 
-    testImplementation(libs.awsSdkS3)
+//    testImplementation(libs.awsSdkS3)
+    testImplementation(libs.iceberg.aws.bundle)
     testImplementation(libs.junitJupiterApi)
     testImplementation(libs.junitJupiterEngine)
     testImplementation(libs.bundles.testcontainers)

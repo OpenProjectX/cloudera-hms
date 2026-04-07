@@ -93,6 +93,7 @@ tasks.jar {
 }
 
 tasks.named<ShadowJar>("shadowJar") {
+    isZip64 = true
     configurations = listOf(shaded)
     archiveClassifier.set("")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE

@@ -12,7 +12,7 @@ val imageName = System.getenv("CLOUDERA_HMS_IMAGE")
     ?: defaultImage
 val baseImage = System.getenv("CLOUDERA_HMS_BASE_IMAGE")
     ?.takeIf(String::isNotBlank)
-val unresolvedBaseImageFallback = "ghcr.io/openprojectx/postgres14-jdk17:latest"
+val unresolvedBaseImageFallback = "docker://ghcr.io/openprojectx/postgres14-jdk17:latest"
 val imageTags = System.getenv("CLOUDERA_HMS_IMAGE_TAGS")
     ?.split(",")
     ?.map(String::trim)
