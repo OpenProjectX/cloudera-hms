@@ -22,7 +22,9 @@ val imageTags = System.getenv("CLOUDERA_HMS_IMAGE_TAGS")
 
 
 dependencies {
-    implementation(project(":core"))
+    implementation(project(":core")) {
+        exclude(group = "org.slf4j", module = "slf4j-reload4j")
+    }
 }
 
 application {
