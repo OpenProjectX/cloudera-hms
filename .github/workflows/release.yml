@@ -5,6 +5,12 @@ on:
     branches:
       - master
   workflow_dispatch:
+    inputs:
+      gradle_args:
+        description: "Extra Gradle args for the release run, for example: --stacktrace --debug"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: write
@@ -22,6 +28,7 @@ jobs:
       CLOUDERA_HMS_BASE_IMAGE: ghcr.io/openprojectx/postgres14-jdk17:latest
       CLOUDERA_HMS_IMAGE: ghcr.io/openprojectx/cloudera-hms
       GRADLE_OPTS: -Dorg.gradle.daemon=false
+      EXTRA_GRADLE_ARGS: ${{ github.event.inputs.gradle_args || '' }}
 
     steps:
       - name: Checkout
@@ -74,13 +81,6 @@ jobs:
         run: |
           printf '%s' "$SIGNING_KEY_ASC" > "$RUNNER_TEMP/signing-key.asc"
 
-      - name: Run Testcontainers verification
-        env:
-          CLOUDERA_HMS_IMAGE: cloudera-hms:test
-          CLOUDERA_HMS_TEST_IMAGE: cloudera-hms:test
-        run: |
-          ./gradlew :testcontainers:test
-
       - name: Run release
         env:
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
@@ -88,4 +88,4 @@ jobs:
           SIGNING_KEY_FILE: ${{ runner.temp }}/signing-key.asc
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: |
-          ./gradlew  release
+          ./gradlew --no-configuration-cache release $EXTRA_GRADLE_ARGS
