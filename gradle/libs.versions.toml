@@ -17,6 +17,7 @@ junit = "5.14.3"
 testcontainers = "2.0.4"
 iceberg = "1.8.1"
 awsSdk = "2.31.65"
+gcsConnector = "4.0.4"
 shadow = "9.0.0"
 jib = "3.4.5"
 scalaFull = "2.12.15"
@@ -62,6 +63,9 @@ iceberg-hive-metastore = { group = "org.apache.iceberg", name = "iceberg-hive-me
 scala-collection-compat =  { group = "org.scala-lang.modules", name = "scala-collection-compat_2.12", version.ref = "scalaCollectionCompat" }
 
 awsSdkS3 = { module = "software.amazon.awssdk:s3", version.ref = "awsSdk" }
+gcsConnector = { module = "com.google.cloud.bigdataoss:gcs-connector", version.ref = "gcsConnector" }
+gcsIo = { module = "com.google.cloud.bigdataoss:gcsio", version.ref = "gcsConnector" }
+gcsUtilHadoop = { module = "com.google.cloud.bigdataoss:util-hadoop", version.ref = "gcsConnector" }
 parquet = { module = "org.apache.parquet:parquet-avro", version.ref = "parquet" }
 datanucleusCore = { module = "org.datanucleus:datanucleus-core", version.ref = "datanucleus" }
 datanucleusApiJdo = { module = "org.datanucleus:datanucleus-api-jdo", version.ref = "datanucleusApiJdo" }
@@ -77,6 +81,7 @@ testcontainers = ["testcontainers", "testcontainersJunit", "testcontainersPostgr
 clouderaSpark = ["clouderaSparkCore", "clouderaSparkSql", "clouderaSparkHive"]
 #"clouderaHiveStandaloneMetastore",
 clouderaHms = ["clouderaHiveMetastore", "clouderaHadoopCommon", "clouderaHiveExec", "clouderaHdfs"]
+gcs = ["gcsConnector", "gcsIo", "gcsUtilHadoop"]
 
 
 #spark-iceberg = ["iceberg-core", "iceberg-spark", "iceberg-spark-extensions", "iceberg-hive-metastore"]

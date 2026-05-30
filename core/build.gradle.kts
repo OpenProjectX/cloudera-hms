@@ -51,6 +51,7 @@ dependencies {
 //        exclude("org.apache.calcite")
     }
     implementation(libs.clouderaHadoopAws)
+    implementation(libs.bundles.gcs)
 
 
     implementation(libs.postgresql)
