@@ -102,7 +102,7 @@ class SparkIcebergS3TckTest {
             spark.sql("CREATE NAMESPACE $catalog.$namespace")
             spark.sql(
                 """
-                CREATE TABLE $catalog.$namespace.$table (
+                CREATE EXTERNAL TABLE $catalog.$namespace.$table (
                     id BIGINT,
                     category STRING,
                     dt STRING
