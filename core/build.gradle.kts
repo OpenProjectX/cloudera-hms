@@ -55,6 +55,7 @@ dependencies {
 
 
     implementation(libs.postgresql)
+    implementation(libs.mariadb)
 
 //    testImplementation(project(":junit5"))
 

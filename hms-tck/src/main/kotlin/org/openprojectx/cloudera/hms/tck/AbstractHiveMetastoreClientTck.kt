@@ -3,6 +3,8 @@ package org.openprojectx.cloudera.hms.tck
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient
 import org.apache.hadoop.hive.metastore.conf.MetastoreConf
+import org.testcontainers.containers.GenericContainer
+import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
 import java.io.BufferedReader
@@ -21,9 +23,23 @@ import kotlin.io.path.writeText
 import kotlin.use
 
 abstract class AbstractHiveMetastoreClientTck : AbstractReusableHiveMetastoreClientTck() {
+    protected open fun databaseType(): String = "postgresql"
+
     protected open fun postgresImage(): String = "postgres:14"
 
-    protected open fun schemaSqlPath(): String = "/hive-schema-3.1.3000.postgres.sql"
+    protected open fun mariadbImage(): String = "mariadb:10.6.24-ubi9"
+
+    protected open fun schemaSqlPath(): String =
+        when (databaseType().lowercase(Locale.ROOT)) {
+            "mariadb", "mysql" -> "/hive-schema-3.1.3000.mysql.sql"
+            else -> "/hive-schema-3.1.3000.postgres.sql"
+        }
+
+    protected open fun jdbcDriver(): String =
+        when (databaseType().lowercase(Locale.ROOT)) {
+            "mariadb", "mysql" -> "org.mariadb.jdbc.Driver"
+            else -> "org.postgresql.Driver"
+        }
 
     protected open fun logLevel(): String = "INFO"
 
@@ -31,15 +47,17 @@ abstract class AbstractHiveMetastoreClientTck : AbstractReusableHiveMetastoreCli
         ClasspathHiveMetastoreProcess.start(config)
 
     override fun metastoreUnderTest(): HiveMetastoreUnderTest {
-        val postgres = postgresContainer().apply { start() }
+        val database = databaseContainer().apply { container.start() }
         val warehouseDir = Files.createTempDirectory("cloudera-hms-tck-warehouse-")
         val metastore = classpathMetastore(
             HmsTckConfig(
                 port = freePort(),
                 warehouseDir = warehouseDir,
-                jdbcUrl = postgres.jdbcUrl,
-                jdbcUser = postgres.username,
-                jdbcPassword = postgres.password,
+                databaseType = databaseType(),
+                jdbcUrl = database.jdbcUrl(),
+                jdbcDriver = jdbcDriver(),
+                jdbcUser = database.username,
+                jdbcPassword = database.password,
                 schemaResource = schemaSqlPath(),
                 logLevel = logLevel(),
             )
@@ -49,22 +67,57 @@ abstract class AbstractHiveMetastoreClientTck : AbstractReusableHiveMetastoreCli
             createClient = metastore::createClient,
             onClose = {
                 metastore.close()
-                postgres.stop()
+                database.container.stop()
             },
         )
     }
 
-    private fun postgresContainer(): PostgreSQLContainer<*> =
-        PostgreSQLContainer(
-            DockerImageName.parse(postgresImage())
-                .asCompatibleSubstituteFor("postgres")
-        ).apply {
-            withDatabaseName("metastore_db")
-            withUsername("hive")
-            withPassword("hive-password")
+    private fun databaseContainer(): DatabaseContainer =
+        when (databaseType().lowercase(Locale.ROOT)) {
+            "postgres", "postgresql" -> PostgreSQLContainer(
+                DockerImageName.parse(postgresImage())
+                    .asCompatibleSubstituteFor("postgres")
+            ).apply {
+                withDatabaseName(DATABASE_NAME)
+                withUsername(DATABASE_USER)
+                withPassword(DATABASE_PASSWORD)
+            }.let {
+                DatabaseContainer(
+                    container = it,
+                    jdbcUrl = { it.jdbcUrl },
+                    username = it.username,
+                    password = it.password,
+                )
+            }
+
+            "mariadb", "mysql" -> GenericContainer(
+                DockerImageName.parse(mariadbImage())
+                    .asCompatibleSubstituteFor("mariadb")
+            ).apply {
+                withExposedPorts(MARIADB_PORT)
+                withEnv("MARIADB_DATABASE", DATABASE_NAME)
+                withEnv("MARIADB_USER", DATABASE_USER)
+                withEnv("MARIADB_PASSWORD", DATABASE_PASSWORD)
+                withEnv("MARIADB_RANDOM_ROOT_PASSWORD", "yes")
+                waitingFor(Wait.forListeningPort().withStartupTimeout(Duration.ofMinutes(2)))
+            }.let {
+                DatabaseContainer(
+                    container = it,
+                    jdbcUrl = { "jdbc:mariadb://${it.host}:${it.getMappedPort(MARIADB_PORT)}/$DATABASE_NAME" },
+                    username = DATABASE_USER,
+                    password = DATABASE_PASSWORD,
+                )
+            }
+
+            else -> error("Unsupported metastore database type: ${databaseType()}")
         }
 
     companion object {
+        private const val DATABASE_NAME = "metastore_db"
+        private const val DATABASE_USER = "hive"
+        private const val DATABASE_PASSWORD = "hive-password"
+        private const val MARIADB_PORT = 3306
+
         private fun freePort(): Int = ServerSocket(0).use { it.localPort }
     }
 }
@@ -73,6 +126,7 @@ data class HmsTckConfig(
     val host: String = "127.0.0.1",
     val port: Int,
     val warehouseDir: Path,
+    val databaseType: String = "postgresql",
     val jdbcUrl: String,
     val jdbcDriver: String = "org.postgresql.Driver",
     val jdbcUser: String,
@@ -120,6 +174,7 @@ class ClasspathHiveMetastoreProcess private constructor(
                 add(javaBinary())
                 add("-Dcloudera.hms.host=${config.host}")
                 add("-Dcloudera.hms.port=${config.port}")
+                add("-Dcloudera.hms.database.type=${config.databaseType}")
                 add("-Dcloudera.hms.jdbc.url=${config.jdbcUrl}")
                 add("-Dcloudera.hms.jdbc.driver=${config.jdbcDriver}")
                 add("-Dcloudera.hms.jdbc.user=${config.jdbcUser}")
@@ -235,6 +290,13 @@ class ClasspathHiveMetastoreProcess private constructor(
         }
     }
 }
+
+private data class DatabaseContainer(
+    val container: GenericContainer<*>,
+    val jdbcUrl: () -> String,
+    val username: String,
+    val password: String,
+)
 
 private class ManagedHiveMetastoreUnderTest(
     override val warehouseDir: Path,

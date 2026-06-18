@@ -11,7 +11,7 @@ object HiveSchemaInitializer {
         }
 
         DriverManager.getConnection(config.jdbcUrl, config.jdbcUser, config.jdbcPassword).use { connection ->
-            if (schemaAlreadyExists(connection)) {
+            if (schemaAlreadyExists(connection, config.databaseType)) {
                 return
             }
 
@@ -29,17 +29,29 @@ object HiveSchemaInitializer {
         }
     }
 
-    private fun schemaAlreadyExists(connection: Connection): Boolean =
-        connection.prepareStatement(
-            """
-            select 1
-            from information_schema.tables
-            where table_schema = current_schema()
-              and table_name = 'VERSION'
-            """.trimIndent()
-        ).use { statement ->
+    private fun schemaAlreadyExists(connection: Connection, databaseType: MetastoreDatabaseType): Boolean {
+        val sql = when (databaseType) {
+            MetastoreDatabaseType.POSTGRESQL ->
+                """
+                select 1
+                from information_schema.tables
+                where table_schema = current_schema()
+                  and table_name = 'VERSION'
+                """.trimIndent()
+
+            MetastoreDatabaseType.MARIADB ->
+                """
+                select 1
+                from information_schema.tables
+                where table_schema = database()
+                  and table_name = 'VERSION'
+                """.trimIndent()
+        }
+
+        return connection.prepareStatement(sql).use { statement ->
             statement.executeQuery().use { resultSet -> resultSet.next() }
         }
+    }
 
     private fun resolveSchemaSql(config: ClouderaHiveMetastoreConfig): String {
         config.schemaFile?.let { file ->

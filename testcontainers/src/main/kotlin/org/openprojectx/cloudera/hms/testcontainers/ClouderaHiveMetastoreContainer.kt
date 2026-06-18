@@ -18,6 +18,9 @@ class ClouderaHiveMetastoreContainer(
     fun withDatabaseName(databaseName: String): ClouderaHiveMetastoreContainer =
         apply { withEnv("POSTGRES_DB", databaseName) }
 
+    fun withDatabaseType(databaseType: String): ClouderaHiveMetastoreContainer =
+        apply { withEnv("HMS_DATABASE_TYPE", databaseType) }
+
     fun withDatabaseUser(username: String): ClouderaHiveMetastoreContainer =
         apply {
             withEnv("POSTGRES_USER", username)

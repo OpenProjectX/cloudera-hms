@@ -6,15 +6,17 @@ import java.nio.file.Path
 import java.util.Properties
 
 fun main() {
+    val databaseType = MetastoreDatabaseType.from(System.getProperty("cloudera.hms.database.type"))
     val config = ClouderaHiveMetastoreConfig(
         host = requiredProperty("cloudera.hms.host"),
         port = requiredProperty("cloudera.hms.port").toInt(),
         warehouseDir = Path.of(requiredProperty("cloudera.hms.warehouse.dir")),
         jdbcUrl = requiredProperty("cloudera.hms.jdbc.url"),
-        jdbcDriver = System.getProperty("cloudera.hms.jdbc.driver", "org.postgresql.Driver"),
+        databaseType = databaseType,
+        jdbcDriver = System.getProperty("cloudera.hms.jdbc.driver", databaseType.defaultJdbcDriver),
         jdbcUser = requiredProperty("cloudera.hms.jdbc.user"),
         jdbcPassword = requiredProperty("cloudera.hms.jdbc.password"),
-        schemaResource = System.getProperty("cloudera.hms.schema.resource", "/hive-schema-3.1.3000.postgres.sql"),
+        schemaResource = System.getProperty("cloudera.hms.schema.resource", databaseType.defaultSchemaResource),
         schemaFile = System.getProperty("cloudera.hms.schema.file")?.let(Path::of),
         initializeSchema = System.getProperty("cloudera.hms.initialize-schema", "true").toBoolean(),
     )

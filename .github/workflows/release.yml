@@ -26,7 +26,6 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      CLOUDERA_HMS_BASE_IMAGE: ghcr.io/openprojectx/postgres14-jdk17:latest
       CLOUDERA_HMS_IMAGE: ghcr.io/openprojectx/cloudera-hms
       GRADLE_OPTS: -Dorg.gradle.daemon=false
       EXTRA_GRADLE_ARGS: ${{ github.event.inputs.gradle_args || '' }}

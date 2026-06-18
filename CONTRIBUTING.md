@@ -62,24 +62,27 @@ dependencies {
 
 ## Container image development
 
-The `image` module builds a runnable container image with Jib. The image expects a base image that already includes:
+The `image` module builds a runnable container image with Jib. The image expects a base image that already includes one supported database:
 
-- PostgreSQL
+- PostgreSQL or MariaDB
 - JDK 17
-- the standard PostgreSQL container entrypoint at `/usr/local/bin/docker-entrypoint.sh`
+- the standard PostgreSQL or MariaDB container entrypoint at `/usr/local/bin/docker-entrypoint.sh`
 
 Build configuration is environment-variable driven:
 
 - `CLOUDERA_HMS_BASE_IMAGE`
 - `CLOUDERA_HMS_IMAGE`
 - `CLOUDERA_HMS_IMAGE_TAGS`
+- `CLOUDERA_HMS_IMAGE_VARIANT`
 
 Useful commands:
 
 ```bash
-CLOUDERA_HMS_BASE_IMAGE=your-registry/postgres-jdk17:tag GRADLE_USER_HOME=/data/.gradle ./gradlew :image:jibBuildTar
-CLOUDERA_HMS_BASE_IMAGE=your-registry/postgres-jdk17:tag GRADLE_USER_HOME=/data/.gradle ./gradlew :image:jibDockerBuild
+GRADLE_USER_HOME=/data/.gradle ./gradlew :image:jibDockerBuildAll
+GRADLE_USER_HOME=/data/.gradle ./gradlew :image:jibAll
 ```
+
+The PostgreSQL variant uses `ghcr.io/openprojectx/postgres14-jdk17:latest` as its base and keeps the existing tag. The MariaDB variant uses `ghcr.io/openprojectx/mariadb10.6-jdk17:latest` as its base and gets a `-mariadb` tag suffix. The MariaDB image is built with `HMS_DATABASE_TYPE=mariadb`, so it uses `/hive-schema-3.1.3000.mysql.sql`, `org.mariadb.jdbc.Driver`, and MariaDB environment variables by default.
 
 The Jib tasks in `:image` are marked incompatible with Gradle configuration cache because that path has been unstable in this build.
 

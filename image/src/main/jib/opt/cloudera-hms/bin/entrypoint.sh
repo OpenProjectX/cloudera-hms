@@ -1,22 +1,53 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+HMS_DATABASE_TYPE="${HMS_DATABASE_TYPE:-postgresql}"
 POSTGRES_PORT="${POSTGRES_PORT:-5432}"
 POSTGRES_DB="${POSTGRES_DB:-metastore_db}"
 POSTGRES_USER="${POSTGRES_USER:-hive}"
 POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-hive-password}"
+MARIADB_PORT="${MARIADB_PORT:-3306}"
+MARIADB_DATABASE="${MARIADB_DATABASE:-$POSTGRES_DB}"
+MARIADB_USER="${MARIADB_USER:-$POSTGRES_USER}"
+MARIADB_PASSWORD="${MARIADB_PASSWORD:-$POSTGRES_PASSWORD}"
+MARIADB_RANDOM_ROOT_PASSWORD="${MARIADB_RANDOM_ROOT_PASSWORD:-yes}"
 HMS_HOST="${HMS_HOST:-0.0.0.0}"
 HMS_PORT="${HMS_PORT:-9083}"
 HMS_WAREHOUSE_DIR="${HMS_WAREHOUSE_DIR:-/var/lib/cloudera-hms/warehouse}"
 HMS_INITIALIZE_SCHEMA="${HMS_INITIALIZE_SCHEMA:-true}"
-HMS_SCHEMA_RESOURCE="${HMS_SCHEMA_RESOURCE:-/hive-schema-3.1.3000.postgres.sql}"
 HMS_SCHEMA_FILE="${HMS_SCHEMA_FILE:-}"
 HMS_EXTRA_CONFIG_FILE="${HMS_EXTRA_CONFIG_FILE:-}"
 HMS_EXTRA_CONF="${HMS_EXTRA_CONF:-}"
 HMS_LOG_LEVEL="${HMS_LOG_LEVEL:-INFO}"
 JAVA_OPTS="${JAVA_OPTS:-}"
 
+case "$HMS_DATABASE_TYPE" in
+  postgres|postgresql)
+    HMS_DATABASE_TYPE="postgresql"
+    HMS_DEFAULT_SCHEMA_RESOURCE="/hive-schema-3.1.3000.postgres.sql"
+    HMS_DEFAULT_JDBC_DRIVER="org.postgresql.Driver"
+    HMS_DEFAULT_JDBC_URL="jdbc:postgresql://127.0.0.1:${POSTGRES_PORT}/${POSTGRES_DB}"
+    HMS_DEFAULT_JDBC_USER="$POSTGRES_USER"
+    HMS_DEFAULT_JDBC_PASSWORD="$POSTGRES_PASSWORD"
+    ;;
+  mariadb|mysql)
+    HMS_DATABASE_TYPE="mariadb"
+    HMS_DEFAULT_SCHEMA_RESOURCE="/hive-schema-3.1.3000.mysql.sql"
+    HMS_DEFAULT_JDBC_DRIVER="org.mariadb.jdbc.Driver"
+    HMS_DEFAULT_JDBC_URL="jdbc:mariadb://127.0.0.1:${MARIADB_PORT}/${MARIADB_DATABASE}"
+    HMS_DEFAULT_JDBC_USER="$MARIADB_USER"
+    HMS_DEFAULT_JDBC_PASSWORD="$MARIADB_PASSWORD"
+    ;;
+  *)
+    echo "Unsupported HMS_DATABASE_TYPE: $HMS_DATABASE_TYPE" >&2
+    exit 1
+    ;;
+esac
+
+HMS_SCHEMA_RESOURCE="${HMS_SCHEMA_RESOURCE:-$HMS_DEFAULT_SCHEMA_RESOURCE}"
+
 export POSTGRES_PORT POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD
+export MARIADB_PORT MARIADB_DATABASE MARIADB_USER MARIADB_PASSWORD MARIADB_RANDOM_ROOT_PASSWORD
 
 mkdir -p "$HMS_WAREHOUSE_DIR"
 
@@ -63,6 +94,21 @@ wait_for_postgres() {
   done
 }
 
+wait_for_mariadb() {
+  local attempts=0
+  until mariadb-admin ping \
+    --protocol=tcp \
+    --host=127.0.0.1 \
+    --port="$MARIADB_PORT" >/dev/null 2>&1; do
+    attempts=$((attempts + 1))
+    if [[ "$attempts" -ge 120 ]]; then
+      echo "MariaDB did not become ready within 120 seconds" >&2
+      return 1
+    fi
+    sleep 1
+  done
+}
+
 render_log4j_config() {
   local output_file
   # Log4j2 infers configuration format from the filename extension.
@@ -85,7 +131,7 @@ EOF
 
 stop_children() {
   [[ -n "${java_pid:-}" ]] && kill -TERM "$java_pid" 2>/dev/null || true
-  [[ -n "${postgres_pid:-}" ]] && kill -TERM "$postgres_pid" 2>/dev/null || true
+  [[ -n "${database_pid:-}" ]] && kill -TERM "$database_pid" 2>/dev/null || true
 }
 
 extra_config_file="$HMS_EXTRA_CONFIG_FILE"
@@ -99,12 +145,22 @@ fi
 trap 'stop_children' INT TERM
 trap '[[ -n "$rendered_config_file" ]] && rm -f "$rendered_config_file"; [[ -n "$rendered_log4j_file" ]] && rm -f "$rendered_log4j_file"' EXIT
 
-/usr/local/bin/docker-entrypoint.sh postgres \
-  -c "listen_addresses=*" \
-  -p "$POSTGRES_PORT" &
-postgres_pid=$!
-
-wait_for_postgres
+case "$HMS_DATABASE_TYPE" in
+  postgresql)
+    /usr/local/bin/docker-entrypoint.sh postgres \
+      -c "listen_addresses=*" \
+      -p "$POSTGRES_PORT" &
+    database_pid=$!
+    wait_for_postgres
+    ;;
+  mariadb)
+    /usr/local/bin/docker-entrypoint.sh mariadbd \
+      --bind-address=0.0.0.0 \
+      --port="$MARIADB_PORT" &
+    database_pid=$!
+    wait_for_mariadb
+    ;;
+esac
 
 java_command=(
   java
@@ -119,11 +175,12 @@ fi
 java_command+=(
   "-Dcloudera.hms.host=$HMS_HOST"
   "-Dcloudera.hms.port=$HMS_PORT"
+  "-Dcloudera.hms.database.type=$HMS_DATABASE_TYPE"
   "-Dcloudera.hms.warehouse.dir=$HMS_WAREHOUSE_DIR"
-  "-Dcloudera.hms.jdbc.url=${HMS_JDBC_URL:-jdbc:postgresql://127.0.0.1:${POSTGRES_PORT}/${POSTGRES_DB}}"
-  "-Dcloudera.hms.jdbc.driver=${HMS_JDBC_DRIVER:-org.postgresql.Driver}"
-  "-Dcloudera.hms.jdbc.user=${HMS_JDBC_USER:-$POSTGRES_USER}"
-  "-Dcloudera.hms.jdbc.password=${HMS_JDBC_PASSWORD:-$POSTGRES_PASSWORD}"
+  "-Dcloudera.hms.jdbc.url=${HMS_JDBC_URL:-$HMS_DEFAULT_JDBC_URL}"
+  "-Dcloudera.hms.jdbc.driver=${HMS_JDBC_DRIVER:-$HMS_DEFAULT_JDBC_DRIVER}"
+  "-Dcloudera.hms.jdbc.user=${HMS_JDBC_USER:-$HMS_DEFAULT_JDBC_USER}"
+  "-Dcloudera.hms.jdbc.password=${HMS_JDBC_PASSWORD:-$HMS_DEFAULT_JDBC_PASSWORD}"
   "-Dcloudera.hms.initialize-schema=$HMS_INITIALIZE_SCHEMA"
   "-Dcloudera.hms.schema.resource=$HMS_SCHEMA_RESOURCE"
   "-Dcloudera.hms.log.level=$HMS_LOG_LEVEL"
@@ -148,9 +205,9 @@ java_command+=(
 "${java_command[@]}" &
 java_pid=$!
 
-wait -n "$postgres_pid" "$java_pid"
+wait -n "$database_pid" "$java_pid"
 status=$?
 stop_children
-wait "$postgres_pid" 2>/dev/null || true
+wait "$database_pid" 2>/dev/null || true
 wait "$java_pid" 2>/dev/null || true
 exit "$status"

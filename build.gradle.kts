@@ -123,7 +123,7 @@ configure<ReleaseExtension> {
         listOf(
             "publishToSonatype",
             "closeAndReleaseSonatypeStagingRepository",
-            ":image:jib"
+            ":image:jibAll"
         )
     )
     versionPropertyFile.set("gradle.properties")

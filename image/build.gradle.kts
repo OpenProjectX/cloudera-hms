@@ -6,19 +6,56 @@ plugins {
     application
 }
 
+data class HmsImageVariant(
+    val name: String,
+    val databaseType: String,
+    val baseImage: String,
+    val tagSuffix: String?,
+    val schemaResource: String,
+)
+
+val imageVariants = listOf(
+    HmsImageVariant(
+        name = "postgres",
+        databaseType = "postgresql",
+        baseImage = "ghcr.io/openprojectx/postgres14-jdk17:latest",
+        tagSuffix = null,
+        schemaResource = "/hive-schema-3.1.3000.postgres.sql",
+    ),
+    HmsImageVariant(
+        name = "mariadb",
+        databaseType = "mariadb",
+        baseImage = "ghcr.io/openprojectx/mariadb10.6-jdk17:latest",
+        tagSuffix = "mariadb",
+        schemaResource = "/hive-schema-3.1.3000.mysql.sql",
+    ),
+)
+
+fun String.capitalized(): String = replaceFirstChar { it.uppercaseChar() }
+
 val defaultImage = "ghcr.io/openprojectx/cloudera-hms"
 val imageName = System.getenv("CLOUDERA_HMS_IMAGE")
     ?.takeIf(String::isNotBlank)
     ?: defaultImage
-val baseImage = System.getenv("CLOUDERA_HMS_BASE_IMAGE")
+val imageVariantName = providers.gradleProperty("clouderaHmsImageVariant")
+    .orElse(providers.environmentVariable("CLOUDERA_HMS_IMAGE_VARIANT"))
+    .orElse("postgres")
+    .get()
+val imageVariant = imageVariants.singleOrNull { it.name == imageVariantName }
+    ?: error("Unsupported clouderaHmsImageVariant '$imageVariantName'. Supported values: ${imageVariants.joinToString { it.name }}")
+val baseImage = providers.gradleProperty("clouderaHmsBaseImage")
+    .orElse(providers.environmentVariable("CLOUDERA_HMS_BASE_IMAGE"))
+    .orNull
     ?.takeIf(String::isNotBlank)
-val unresolvedBaseImageFallback = "docker://ghcr.io/openprojectx/postgres14-jdk17:latest"
+val unresolvedBaseImageFallback = "docker://${imageVariant.baseImage}"
 val imageTags = System.getenv("CLOUDERA_HMS_IMAGE_TAGS")
     ?.split(",")
     ?.map(String::trim)
     ?.filter(String::isNotEmpty)
-    ?.toSet()
-    ?: setOf(project.version.toString())
+    ?: listOf(project.version.toString())
+val variantImageTags = imageTags
+    .map { tag -> imageVariant.tagSuffix?.let { "$tag-$it" } ?: tag }
+    .toSet()
 
 
 dependencies {
@@ -45,7 +82,7 @@ jib {
     }
     to {
         image = imageName
-        tags = imageTags
+        tags = variantImageTags
     }
     container {
         mainClass = "org.openprojectx.cloudera.hms.core.HiveMetastoreServerMainKt"
@@ -53,8 +90,9 @@ jib {
         workingDirectory = "/opt/cloudera-hms"
         creationTime = "USE_CURRENT_TIMESTAMP"
         entrypoint = listOf("/bin/bash", "/opt/cloudera-hms/bin/entrypoint.sh")
-        ports = listOf("5432", "9083")
+        ports = listOf("5432", "3306", "9083")
         environment = mapOf(
+            "HMS_DATABASE_TYPE" to imageVariant.databaseType,
             "POSTGRES_DB" to "metastore_db",
             "POSTGRES_USER" to "hive",
             "POSTGRES_PASSWORD" to "hive-password",
@@ -62,7 +100,7 @@ jib {
             "HMS_HOST" to "0.0.0.0",
             "HMS_PORT" to "9083",
             "HMS_WAREHOUSE_DIR" to "/var/lib/cloudera-hms/warehouse",
-            "HMS_SCHEMA_RESOURCE" to "/hive-schema-3.1.3000.postgres.sql",
+            "HMS_SCHEMA_RESOURCE" to imageVariant.schemaResource,
             "HMS_INITIALIZE_SCHEMA" to "true",
             "HMS_LOG_LEVEL" to "INFO",
         )
@@ -87,3 +125,38 @@ listOf("jib", "jibBuildTar", "jibDockerBuild").forEach { taskName ->
         )
     }
 }
+
+fun registerVariantBuildTasks(jibTaskName: String, registerAggregate: Boolean = true) {
+    val aggregateTaskName = "${jibTaskName}All"
+    val variantTaskNames = imageVariants.map { variant ->
+        val taskName = "${jibTaskName}${variant.name.capitalized()}"
+        tasks.register<GradleBuild>(taskName) {
+            group = "containerization"
+            description = "Runs :image:$jibTaskName with the ${variant.name} database base image."
+            dir = rootProject.projectDir
+            tasks = listOf(":image:$jibTaskName")
+            startParameter.projectProperties = gradle.startParameter.projectProperties + mapOf(
+                "clouderaHmsImageVariant" to variant.name,
+                "clouderaHmsBaseImage" to variant.baseImage,
+            )
+        }
+        taskName
+    }
+    variantTaskNames.zipWithNext().forEach { (first, second) ->
+        tasks.named(second) {
+            mustRunAfter(first)
+        }
+    }
+
+    if (registerAggregate) {
+        tasks.register(aggregateTaskName) {
+            group = "containerization"
+            description = "Runs :image:$jibTaskName for all database image variants."
+            dependsOn(variantTaskNames)
+        }
+    }
+}
+
+registerVariantBuildTasks("jib")
+registerVariantBuildTasks("jibBuildTar", registerAggregate = false)
+registerVariantBuildTasks("jibDockerBuild")

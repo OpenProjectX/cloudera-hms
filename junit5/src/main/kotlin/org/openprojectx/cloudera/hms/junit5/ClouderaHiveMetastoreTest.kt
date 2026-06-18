@@ -7,7 +7,9 @@ import org.junit.jupiter.api.extension.ExtendWith
 @MustBeDocumented
 @ExtendWith(ClouderaHiveMetastoreExtension::class)
 annotation class ClouderaHiveMetastoreTest(
+    val databaseType: String = "postgresql",
     val postgresImage: String = "postgres:14",
+    val mariadbImage: String = "mariadb:10.6.24-ubi9",
     val schemaSqlPath: String = "",
     val logLevel: String = "INFO",
 )
