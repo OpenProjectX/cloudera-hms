@@ -145,6 +145,7 @@ fun registerVariantBuildTasks(jibTaskName: String, registerAggregate: Boolean = 
             if (jibTaskName == "jib") {
                 startParameter.systemPropertiesArgs = gradle.startParameter.systemPropertiesArgs + mapOf(
                     "jib.serialize" to "true",
+                    "jib.disableUpdateChecks" to "true",
                 )
             }
         }
