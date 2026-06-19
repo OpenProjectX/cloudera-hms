@@ -44,3 +44,6 @@ bin/
 ### Mac OS ###
 .DS_Store
 /.idea/
+/.secrets.env
+/github.http
+/http-client.private.env.json

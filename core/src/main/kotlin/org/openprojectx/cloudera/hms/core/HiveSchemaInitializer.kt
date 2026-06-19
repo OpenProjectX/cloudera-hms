@@ -10,7 +10,7 @@ object HiveSchemaInitializer {
             return
         }
 
-        DriverManager.getConnection(config.jdbcUrl, config.jdbcUser, config.jdbcPassword).use { connection ->
+        DriverManager.getConnection(config.effectiveJdbcUrl, config.jdbcUser, config.jdbcPassword).use { connection ->
             if (schemaAlreadyExists(connection, config.databaseType)) {
                 return
             }
@@ -19,13 +19,42 @@ object HiveSchemaInitializer {
             val statements = splitSqlStatements(resolveSchemaSql(config))
             try {
                 connection.createStatement().use { statement ->
+                    configureBeforeSchemaInitialization(config.databaseType, statement)
                     statements.forEach(statement::execute)
                 }
                 connection.commit()
             } catch (ex: Exception) {
                 connection.rollback()
                 throw IllegalStateException("Failed to initialize Hive metastore schema", ex)
+            } finally {
+                connection.createStatement().use { statement ->
+                    restoreAfterSchemaInitialization(config.databaseType, statement)
+                }
             }
+        }
+    }
+
+    private fun configureBeforeSchemaInitialization(
+        databaseType: MetastoreDatabaseType,
+        statement: java.sql.Statement,
+    ) {
+        when (databaseType) {
+            MetastoreDatabaseType.POSTGRESQL -> Unit
+            MetastoreDatabaseType.MARIADB -> {
+                statement.execute("set @cloudera_hms_old_foreign_key_checks=@@FOREIGN_KEY_CHECKS")
+                statement.execute("set FOREIGN_KEY_CHECKS=0")
+            }
+        }
+    }
+
+    private fun restoreAfterSchemaInitialization(
+        databaseType: MetastoreDatabaseType,
+        statement: java.sql.Statement,
+    ) {
+        when (databaseType) {
+            MetastoreDatabaseType.POSTGRESQL -> Unit
+            MetastoreDatabaseType.MARIADB ->
+                statement.execute("set FOREIGN_KEY_CHECKS=coalesce(@cloudera_hms_old_foreign_key_checks, 1)")
         }
     }
 

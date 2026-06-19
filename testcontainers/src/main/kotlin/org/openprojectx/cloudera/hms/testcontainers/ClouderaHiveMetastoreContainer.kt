@@ -16,7 +16,10 @@ class ClouderaHiveMetastoreContainer(
     }
 
     fun withDatabaseName(databaseName: String): ClouderaHiveMetastoreContainer =
-        apply { withEnv("POSTGRES_DB", databaseName) }
+        apply {
+            withEnv("POSTGRES_DB", databaseName)
+            withEnv("MARIADB_DATABASE", databaseName)
+        }
 
     fun withDatabaseType(databaseType: String): ClouderaHiveMetastoreContainer =
         apply { withEnv("HMS_DATABASE_TYPE", databaseType) }
@@ -24,12 +27,14 @@ class ClouderaHiveMetastoreContainer(
     fun withDatabaseUser(username: String): ClouderaHiveMetastoreContainer =
         apply {
             withEnv("POSTGRES_USER", username)
+            withEnv("MARIADB_USER", username)
             withEnv("HMS_JDBC_USER", username)
         }
 
     fun withDatabasePassword(password: String): ClouderaHiveMetastoreContainer =
         apply {
             withEnv("POSTGRES_PASSWORD", password)
+            withEnv("MARIADB_PASSWORD", password)
             withEnv("HMS_JDBC_PASSWORD", password)
         }
 

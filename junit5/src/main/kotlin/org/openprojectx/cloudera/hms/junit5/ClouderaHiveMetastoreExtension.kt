@@ -108,7 +108,10 @@ class ClouderaHiveMetastoreExtension : BeforeAllCallback, AfterAllCallback, Para
             }.let {
                 DatabaseContainer(
                     container = it,
-                    jdbcUrl = { "jdbc:mariadb://${it.host}:${it.getMappedPort(MARIADB_PORT)}/$DATABASE_NAME" },
+                    jdbcUrl = {
+                        "jdbc:mariadb://${it.host}:${it.getMappedPort(MARIADB_PORT)}/$DATABASE_NAME" +
+                            "?useMysqlMetadata=true"
+                    },
                     username = DATABASE_USER,
                     password = DATABASE_PASSWORD,
                 )

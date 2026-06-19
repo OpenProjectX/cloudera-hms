@@ -25,6 +25,6 @@ dependencies {
 }
 
 tasks.named<Test>("test") {
-    dependsOn(":image:jibDockerBuild")
+    dependsOn(":image:jibDockerBuildAll")
     useJUnitPlatform()
 }

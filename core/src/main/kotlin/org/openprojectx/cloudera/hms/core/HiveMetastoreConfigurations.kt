@@ -9,7 +9,7 @@ object HiveMetastoreConfigurations {
         MetastoreConf.newMetastoreConf().apply {
             MetastoreConf.setVar(this, MetastoreConf.ConfVars.THRIFT_BIND_HOST, config.host)
             setInt(MetastoreConf.ConfVars.SERVER_PORT.varname, config.port)
-            set(MetastoreConf.ConfVars.CONNECT_URL_KEY.varname, config.jdbcUrl)
+            set(MetastoreConf.ConfVars.CONNECT_URL_KEY.varname, config.effectiveJdbcUrl)
             set(MetastoreConf.ConfVars.CONNECTION_DRIVER.varname, config.jdbcDriver)
             set(MetastoreConf.ConfVars.CONNECTION_USER_NAME.varname, config.jdbcUser)
             set(MetastoreConf.ConfVars.PWD.varname, config.jdbcPassword)

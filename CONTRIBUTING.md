@@ -82,7 +82,7 @@ GRADLE_USER_HOME=/data/.gradle ./gradlew :image:jibDockerBuildAll
 GRADLE_USER_HOME=/data/.gradle ./gradlew :image:jibAll
 ```
 
-The PostgreSQL variant uses `ghcr.io/openprojectx/postgres14-jdk17:latest` as its base and keeps the existing tag. The MariaDB variant uses `ghcr.io/openprojectx/mariadb10.6-jdk17:latest` as its base and gets a `-mariadb` tag suffix. The MariaDB image is built with `HMS_DATABASE_TYPE=mariadb`, so it uses `/hive-schema-3.1.3000.mysql.sql`, `org.mariadb.jdbc.Driver`, and MariaDB environment variables by default.
+The PostgreSQL variant uses `ghcr.io/openprojectx/postgres14-jdk17:latest` as its base and keeps the existing tag. The MariaDB variant uses `ghcr.io/openprojectx/mariadb10.6-jdk17:latest` as its base and gets a `-mariadb` tag suffix. The MariaDB image is built with `HMS_DATABASE_TYPE=mariadb`, so it uses `/hive-schema-3.1.3000.mysql.sql`, `org.mariadb.jdbc.Driver`, `useMysqlMetadata=true`, and MariaDB environment variables by default.
 
 The Jib tasks in `:image` are marked incompatible with Gradle configuration cache because that path has been unstable in this build.
 

@@ -26,4 +26,7 @@ data class ClouderaHiveMetastoreConfig(
 
     val thriftUri: String
         get() = "thrift://$host:$port"
+
+    val effectiveJdbcUrl: String
+        get() = databaseType.compatibleJdbcUrl(jdbcUrl)
 }

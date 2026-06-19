@@ -128,7 +128,7 @@ GRADLE_USER_HOME=/data/.gradle ./gradlew :image:jibDockerBuildPostgres
 GRADLE_USER_HOME=/data/.gradle ./gradlew :image:jibDockerBuildMariadb
 ```
 
-Run the MariaDB image normally; it is built with `HMS_DATABASE_TYPE=mariadb` and defaults to `/hive-schema-3.1.3000.mysql.sql`, `org.mariadb.jdbc.Driver`, and a `jdbc:mariadb://127.0.0.1:3306/metastore_db` URL.
+Run the MariaDB image normally; it is built with `HMS_DATABASE_TYPE=mariadb` and defaults to `/hive-schema-3.1.3000.mysql.sql`, `org.mariadb.jdbc.Driver`, and a `jdbc:mariadb://127.0.0.1:3306/metastore_db?useMysqlMetadata=true` URL.
 
 For contributor-oriented build commands, version alignment, and verification notes, see [CONTRIBUTING.md](/data/Git/cloudera-hms/CONTRIBUTING.md).
 

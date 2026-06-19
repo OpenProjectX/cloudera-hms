@@ -12,6 +12,7 @@ data class HmsImageVariant(
     val baseImage: String,
     val tagSuffix: String?,
     val schemaResource: String,
+    val warehouseDir: String,
 )
 
 val imageVariants = listOf(
@@ -21,6 +22,7 @@ val imageVariants = listOf(
         baseImage = "ghcr.io/openprojectx/postgres14-jdk17:latest",
         tagSuffix = null,
         schemaResource = "/hive-schema-3.1.3000.postgres.sql",
+        warehouseDir = "/var/lib/cloudera-hms/warehouse",
     ),
     HmsImageVariant(
         name = "mariadb",
@@ -28,6 +30,7 @@ val imageVariants = listOf(
         baseImage = "ghcr.io/openprojectx/mariadb10.6-jdk17:latest",
         tagSuffix = "mariadb",
         schemaResource = "/hive-schema-3.1.3000.mysql.sql",
+        warehouseDir = "/var/lib/mysql/cloudera_hms/warehouse",
     ),
 )
 
@@ -99,7 +102,7 @@ jib {
             "POSTGRES_PORT" to "5432",
             "HMS_HOST" to "0.0.0.0",
             "HMS_PORT" to "9083",
-            "HMS_WAREHOUSE_DIR" to "/var/lib/cloudera-hms/warehouse",
+            "HMS_WAREHOUSE_DIR" to imageVariant.warehouseDir,
             "HMS_SCHEMA_RESOURCE" to imageVariant.schemaResource,
             "HMS_INITIALIZE_SCHEMA" to "true",
             "HMS_LOG_LEVEL" to "INFO",
