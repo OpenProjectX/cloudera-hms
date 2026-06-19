@@ -142,6 +142,11 @@ fun registerVariantBuildTasks(jibTaskName: String, registerAggregate: Boolean = 
                 "clouderaHmsImageVariant" to variant.name,
                 "clouderaHmsBaseImage" to variant.baseImage,
             )
+            if (jibTaskName == "jib") {
+                startParameter.systemPropertiesArgs = gradle.startParameter.systemPropertiesArgs + mapOf(
+                    "jib.serialize" to "true",
+                )
+            }
         }
         taskName
     }

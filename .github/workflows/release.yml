@@ -27,7 +27,7 @@ jobs:
 
     env:
       CLOUDERA_HMS_IMAGE: ghcr.io/openprojectx/cloudera-hms
-      GRADLE_OPTS: -Dorg.gradle.daemon=false
+      GRADLE_OPTS: -Dorg.gradle.daemon=false -Djib.serialize=true
       EXTRA_GRADLE_ARGS: ${{ github.event.inputs.gradle_args || '' }}
 
     steps:
