@@ -84,6 +84,15 @@ GRADLE_USER_HOME=/data/.gradle ./gradlew :image:jibAll
 
 The PostgreSQL variant uses `ghcr.io/openprojectx/postgres14-jdk17:latest` as its base and keeps the existing tag. The MariaDB variant uses `ghcr.io/openprojectx/mariadb10.6-jdk17:latest` as its base and gets a `-mariadb` tag suffix. The MariaDB image is built with `HMS_DATABASE_TYPE=mariadb`, so it uses `/hive-schema-3.1.3000.mysql.sql`, `org.mariadb.jdbc.Driver`, `useMysqlMetadata=true`, and MariaDB environment variables by default.
 
+Smoke-run the published images with Docker:
+
+```bash
+docker run --rm --name cloudera-hms -p 9083:9083 -p 5432:5432 ghcr.io/openprojectx/cloudera-hms:latest
+docker run --rm --name cloudera-hms-mariadb -p 9083:9083 -p 3306:3306 ghcr.io/openprojectx/cloudera-hms:latest-mariadb
+```
+
+Use `POSTGRES_*` environment variables for the PostgreSQL image and `MARIADB_*` environment variables for the MariaDB image. Both variants expose the Hive Metastore Thrift service on port `9083`.
+
 The Jib tasks in `:image` are marked incompatible with Gradle configuration cache because that path has been unstable in this build.
 
 ## Tests

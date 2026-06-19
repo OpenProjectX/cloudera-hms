@@ -55,7 +55,7 @@ dependencies {
 }
 ```
 
-Use the default image:
+Use the default PostgreSQL image:
 
 ```kotlin
 val metastore = ClouderaHiveMetastoreContainer()
@@ -65,16 +65,32 @@ val metastore = ClouderaHiveMetastoreContainer()
     .withDatabasePassword("hive-password")
 ```
 
-Use a custom image explicitly:
+Use the MariaDB image:
 
 ```kotlin
-val metastore = ClouderaHiveMetastoreContainer.withImage("my-registry/cloudera-hms:test")
+val metastore = ClouderaHiveMetastoreContainer
+    .withImage("ghcr.io/openprojectx/cloudera-hms:latest-mariadb")
+    .withDatabaseType("mariadb")
     .withDatabaseName("metastore_db")
     .withDatabaseUser("hive")
     .withDatabasePassword("hive-password")
 ```
 
-Or set `CLOUDERA_HMS_TEST_IMAGE` and keep using the default constructor.
+Use a custom image explicitly:
+
+```kotlin
+val metastore = ClouderaHiveMetastoreContainer.withImage("my-registry/cloudera-hms:test")
+    .withDatabaseType("postgresql")
+    .withDatabaseName("metastore_db")
+    .withDatabaseUser("hive")
+    .withDatabasePassword("hive-password")
+```
+
+Or set `CLOUDERA_HMS_TEST_IMAGE` and keep using the default constructor. For MariaDB, point it at a `-mariadb` image tag and set `HMS_DATABASE_TYPE` through the wrapper:
+
+```bash
+export CLOUDERA_HMS_TEST_IMAGE=ghcr.io/openprojectx/cloudera-hms:latest-mariadb
+```
 
 Typical JUnit 5 and Testcontainers usage:
 
@@ -84,9 +100,35 @@ import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 
 @Testcontainers
-class MyMetastoreContainerTest {
+class MyPostgreSqlMetastoreContainerTest {
     @Container
     private val metastore = ClouderaHiveMetastoreContainer()
+        .withDatabaseType("postgresql")
+        .withDatabaseName("metastore_db")
+        .withDatabaseUser("hive")
+        .withDatabasePassword("hive-password")
+
+    @Test
+    fun testMetastore() {
+        val thriftUri = metastore.thriftUri()
+        // Create a HiveMetaStoreClient or your application client here.
+    }
+}
+```
+
+MariaDB JUnit 5 and Testcontainers usage:
+
+```kotlin
+import org.junit.jupiter.api.Test
+import org.testcontainers.junit.jupiter.Container
+import org.testcontainers.junit.jupiter.Testcontainers
+
+@Testcontainers
+class MyMariaDbMetastoreContainerTest {
+    @Container
+    private val metastore = ClouderaHiveMetastoreContainer
+        .withImage("ghcr.io/openprojectx/cloudera-hms:latest-mariadb")
+        .withDatabaseType("mariadb")
         .withDatabaseName("metastore_db")
         .withDatabaseUser("hive")
         .withDatabasePassword("hive-password")
@@ -129,6 +171,50 @@ GRADLE_USER_HOME=/data/.gradle ./gradlew :image:jibDockerBuildMariadb
 ```
 
 Run the MariaDB image normally; it is built with `HMS_DATABASE_TYPE=mariadb` and defaults to `/hive-schema-3.1.3000.mysql.sql`, `org.mariadb.jdbc.Driver`, and a `jdbc:mariadb://127.0.0.1:3306/metastore_db?useMysqlMetadata=true` URL.
+
+Run the PostgreSQL image with Docker:
+
+```bash
+docker run --rm \
+  --name cloudera-hms \
+  -p 9083:9083 \
+  -p 5432:5432 \
+  ghcr.io/openprojectx/cloudera-hms:latest
+```
+
+Run the MariaDB image with Docker:
+
+```bash
+docker run --rm \
+  --name cloudera-hms-mariadb \
+  -p 9083:9083 \
+  -p 3306:3306 \
+  ghcr.io/openprojectx/cloudera-hms:latest-mariadb
+```
+
+Both images expose the Hive Metastore Thrift service on `9083`. The PostgreSQL variant also exposes `5432`; the MariaDB variant also exposes `3306`.
+
+Override the default database credentials when needed:
+
+```bash
+docker run --rm \
+  --name cloudera-hms \
+  -p 9083:9083 \
+  -e POSTGRES_DB=metastore_db \
+  -e POSTGRES_USER=hive \
+  -e POSTGRES_PASSWORD=hive-password \
+  ghcr.io/openprojectx/cloudera-hms:latest
+```
+
+```bash
+docker run --rm \
+  --name cloudera-hms-mariadb \
+  -p 9083:9083 \
+  -e MARIADB_DATABASE=metastore_db \
+  -e MARIADB_USER=hive \
+  -e MARIADB_PASSWORD=hive-password \
+  ghcr.io/openprojectx/cloudera-hms:latest-mariadb
+```
 
 For contributor-oriented build commands, version alignment, and verification notes, see [CONTRIBUTING.md](/data/Git/cloudera-hms/CONTRIBUTING.md).
 

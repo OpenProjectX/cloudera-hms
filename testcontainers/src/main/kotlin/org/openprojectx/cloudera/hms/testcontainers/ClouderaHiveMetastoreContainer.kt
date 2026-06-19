@@ -73,6 +73,9 @@ class ClouderaHiveMetastoreContainer(
             return DockerImageName.parse(configuredImage)
         }
 
+        fun withImage(dockerImageName: String): ClouderaHiveMetastoreContainer =
+            ClouderaHiveMetastoreContainer(DockerImageName.parse(dockerImageName))
+
         private fun encodeConfigKey(key: String): String =
             key.lowercase(Locale.ROOT)
                 .replace("-", "__")
