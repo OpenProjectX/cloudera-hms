@@ -133,19 +133,30 @@ fun registerVariantBuildTasks(jibTaskName: String, registerAggregate: Boolean = 
     val aggregateTaskName = "${jibTaskName}All"
     val variantTaskNames = imageVariants.map { variant ->
         val taskName = "${jibTaskName}${variant.name.capitalized()}"
-        tasks.register<GradleBuild>(taskName) {
-            group = "containerization"
-            description = "Runs :image:$jibTaskName with the ${variant.name} database base image."
-            dir = rootProject.projectDir
-            tasks = listOf(":image:$jibTaskName")
-            startParameter.projectProperties = gradle.startParameter.projectProperties + mapOf(
-                "clouderaHmsImageVariant" to variant.name,
-                "clouderaHmsBaseImage" to variant.baseImage,
-            )
-            if (jibTaskName == "jib") {
-                startParameter.systemPropertiesArgs = gradle.startParameter.systemPropertiesArgs + mapOf(
-                    "jib.serialize" to "true",
-                    "jib.disableUpdateChecks" to "true",
+        if (jibTaskName == "jib") {
+            tasks.register<Exec>(taskName) {
+                group = "containerization"
+                description = "Runs :image:$jibTaskName with the ${variant.name} database base image."
+                workingDir = rootProject.projectDir
+                commandLine(
+                    rootProject.layout.projectDirectory.file("gradlew").asFile.absolutePath,
+                    "--no-configuration-cache",
+                    ":image:$jibTaskName",
+                    "-PclouderaHmsImageVariant=${variant.name}",
+                    "-PclouderaHmsBaseImage=${variant.baseImage}",
+                    "-Djib.serialize=true",
+                    "-Djib.disableUpdateChecks=true",
+                )
+            }
+        } else {
+            tasks.register<GradleBuild>(taskName) {
+                group = "containerization"
+                description = "Runs :image:$jibTaskName with the ${variant.name} database base image."
+                dir = rootProject.projectDir
+                tasks = listOf(":image:$jibTaskName")
+                startParameter.projectProperties = gradle.startParameter.projectProperties + mapOf(
+                    "clouderaHmsImageVariant" to variant.name,
+                    "clouderaHmsBaseImage" to variant.baseImage,
                 )
             }
         }

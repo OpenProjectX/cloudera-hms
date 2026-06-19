@@ -121,9 +121,9 @@ nexusPublishing {
 configure<ReleaseExtension> {
     buildTasks.set(
         listOf(
+            ":image:jibAll",
             "publishToSonatype",
-            "closeAndReleaseSonatypeStagingRepository",
-            ":image:jibAll"
+            "closeAndReleaseSonatypeStagingRepository"
         )
     )
     versionPropertyFile.set("gradle.properties")
